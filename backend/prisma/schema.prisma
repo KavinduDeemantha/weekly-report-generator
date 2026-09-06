@@ -1,0 +1,247 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+  moduleFormat           = "esm"
+  generatedFileExtension = "ts"
+  importFileExtension    = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  TEAM_MEMBER
+  MANAGER
+}
+
+enum ReportStatus {
+  DRAFT
+  SUBMITTED
+  NEEDS_CORRECTION
+  APPROVED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum TaskStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  BLOCKED
+}
+
+enum ReviewAction {
+  REQUEST_CHANGES
+  APPROVED
+}
+
+enum TimeEntryType {
+  DEVELOPMENT
+  TESTING
+  MEETINGS
+  DOCUMENTATION
+  OTHER
+}
+
+model User {
+  id           String  @id @default(uuid()) @db.Uuid
+  name         String
+  email        String  @unique
+  passwordHash String
+  role         Role    @default(TEAM_MEMBER)
+  isActive     Boolean @default(true)
+
+  reports Report[]
+  reviews Review[] @relation("ReviewerReviews")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([role])
+  @@index([isActive])
+  @@map("users")
+}
+
+model Project {
+  id          String  @id @default(uuid()) @db.Uuid
+  name        String  @unique
+  description String?
+  isActive    Boolean @default(true)
+
+  reports Report[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("projects")
+}
+
+model Report {
+  id String @id @default(uuid()) @db.Uuid
+
+  userId    String @db.Uuid
+  projectId String @db.Uuid
+
+  weekStart DateTime
+  weekEnd   DateTime
+
+  status         ReportStatus @default(DRAFT)
+  currentVersion Int          @default(1)
+
+  user    User    @relation(fields: [userId], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
+
+  versions ReportVersion[]
+  reviews  Review[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, weekStart])
+  @@index([userId])
+  @@index([projectId])
+  @@index([status])
+  @@index([weekStart])
+  @@map("reports")
+}
+
+model ReportVersion {
+  id String @id @default(uuid()) @db.Uuid
+
+  reportId      String @db.Uuid
+  versionNumber Int
+
+  notes       String?
+  submittedAt DateTime?
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  tasks         ReportTask[]
+  nextWeekTasks NextWeekTask[]
+  blockers      Blocker[]
+  achievements  Achievement[]
+  timeEntries   TimeEntry[]
+  reviews       Review[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([reportId, versionNumber])
+  @@index([reportId])
+  @@map("report_versions")
+}
+
+model ReportTask {
+  id String @id @default(uuid()) @db.Uuid
+
+  reportVersionId String @db.Uuid
+
+  name              String
+  priority          TaskPriority
+  plannedPercentage Int
+  actualPercentage  Int
+  status            TaskStatus
+
+  plannedHours Float?
+  actualHours  Float?
+  deliverable  String?
+
+  reportVersion ReportVersion @relation(fields: [reportVersionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([reportVersionId])
+  @@map("report_tasks")
+}
+
+model NextWeekTask {
+  id String @id @default(uuid()) @db.Uuid
+
+  reportVersionId String @db.Uuid
+  description     String
+
+  reportVersion ReportVersion @relation(fields: [reportVersionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([reportVersionId])
+  @@map("next_week_tasks")
+}
+
+model Blocker {
+  id String @id @default(uuid()) @db.Uuid
+
+  reportVersionId String @db.Uuid
+
+  description String
+  isKeyIssue  Boolean @default(false)
+  isResolved  Boolean @default(false)
+
+  reportVersion ReportVersion @relation(fields: [reportVersionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([reportVersionId])
+  @@index([isResolved])
+  @@map("blockers")
+}
+
+model Achievement {
+  id String @id @default(uuid()) @db.Uuid
+
+  reportVersionId String @db.Uuid
+
+  description      String
+  isKeyAchievement Boolean @default(false)
+
+  reportVersion ReportVersion @relation(fields: [reportVersionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([reportVersionId])
+  @@map("achievements")
+}
+
+model TimeEntry {
+  id String @id @default(uuid()) @db.Uuid
+
+  reportVersionId String @db.Uuid
+
+  type  TimeEntryType
+  hours Float
+
+  reportVersion ReportVersion @relation(fields: [reportVersionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([reportVersionId])
+  @@map("time_entries")
+}
+
+model Review {
+  id String @id @default(uuid()) @db.Uuid
+
+  reportId        String @db.Uuid
+  reportVersionId String @db.Uuid
+  reviewerId      String @db.Uuid
+
+  action  ReviewAction
+  comment String?
+
+  report        Report        @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  reportVersion ReportVersion @relation(fields: [reportVersionId], references: [id], onDelete: Cascade)
+  reviewer      User          @relation("ReviewerReviews", fields: [reviewerId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([reportId])
+  @@index([reportVersionId])
+  @@index([reviewerId])
+  @@map("reviews")
+}
