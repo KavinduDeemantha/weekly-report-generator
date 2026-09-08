@@ -5,6 +5,10 @@ import { RegisterPage } from './features/auth/RegisterPage';
 import { ManagerDashboardPage } from './pages/ManagerDashboardPage';
 import { NewReportPage } from './pages/NewReportPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { EditReportPage } from './pages/EditReportPage';
+import { ReportDetailPage } from './pages/ReportDetailPage';
+import { ReportVersionDetailPage } from './pages/ReportVersionDetailPage';
+import { ReportVersionsPage } from './pages/ReportVersionsPage';
 import { ReportsPage } from './pages/ReportsPage';
 import {
   PublicOnlyRoute,
@@ -30,6 +34,16 @@ export function App() {
           >
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/reports/new" element={<NewReportPage />} />
+            <Route path="/reports/:id" element={<ReportDetailPage />} />
+            <Route path="/reports/:id/edit" element={<EditReportPage />} />
+            <Route
+              path="/reports/:id/versions"
+              element={<ReportVersionsPage />}
+            />
+            <Route
+              path="/reports/:id/versions/:versionNumber"
+              element={<ReportVersionDetailPage />}
+            />
           </Route>
 
           <Route element={<RequireRole allowedRoles={['MANAGER']} />}>

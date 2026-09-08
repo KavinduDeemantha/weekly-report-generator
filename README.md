@@ -50,12 +50,33 @@ Frontend routes:
 
 - `/login` public-only sign in page
 - `/register` public-only team-member registration page
-- `/reports` authenticated `TEAM_MEMBER` shell
-- `/reports/new` authenticated `TEAM_MEMBER` shell
+- `/reports` authenticated `TEAM_MEMBER` report history
+- `/reports/new` authenticated `TEAM_MEMBER` create-report form
+- `/reports/:id` authenticated `TEAM_MEMBER` report detail
+- `/reports/:id/edit` authenticated `TEAM_MEMBER` draft/correction edit form
+- `/reports/:id/versions` authenticated `TEAM_MEMBER` version history
+- `/reports/:id/versions/:versionNumber` authenticated `TEAM_MEMBER` read-only version detail
 - `/manager/dashboard` authenticated `MANAGER` shell
 - `/` redirects by role: manager to `/manager/dashboard`, team member to `/reports`, unauthenticated user to `/login`
 
 Frontend route guards are for user experience only. Backend authorization remains the security boundary.
+
+## Frontend Member Reports
+
+The member report UI consumes the existing backend report APIs with TanStack Query. The report list supports pagination plus status, project, and date-range filters. Report server state is cached under report-specific query keys and mutations invalidate only related list/detail/version queries.
+
+The create and edit pages share one React Hook Form form backed by Zod validation. The form mirrors the fixed backend report structure: metadata, completed tasks, next-week tasks, blockers, achievements, and time entries. Users can add or remove rows inside those sections, but cannot change ownership, status, current version, or report schema.
+
+Frontend validation checks date order, required project/task fields, 0-100 percentages, non-negative hours, and at most one key blocker and one key achievement. Backend validation remains authoritative.
+
+Lifecycle behavior in the UI:
+
+- `DRAFT`: editable and submittable
+- `SUBMITTED`: read-only
+- `NEEDS_CORRECTION`: editable and resubmittable, with latest manager feedback shown prominently
+- `APPROVED`: read-only
+
+Submit and resubmit actions ask for confirmation because submitted content becomes read-only until a manager action. Version history pages are always read-only and display immutable historical report content plus reviews linked to each version.
 
 ## Projects
 
