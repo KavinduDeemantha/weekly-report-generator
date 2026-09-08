@@ -1,5 +1,34 @@
 ## Weekly Report Generator & Team Dashboard
 
+Full-stack technical assignment for weekly team reporting, manager review, and reporting analytics.
+
+## Features
+
+- Cookie-based authentication with public team-member registration
+- Role-based authorization for `TEAM_MEMBER` and `MANAGER`
+- Team-member weekly report creation, editing, submission, correction, resubmission, and version history
+- Manager report review with request-changes and approval actions
+- Project management with soft deactivation
+- Read-only manager user list
+- Manager dashboard analytics with filters, charts, summary metrics, and activity feed
+
+## Tech Stack
+
+- Backend: NestJS, TypeScript, PostgreSQL, Prisma 7, `@prisma/adapter-pg`, Vitest, Supertest
+- Frontend: React, TypeScript, Vite, React Router, TanStack Query, React Hook Form, Zod, Tailwind CSS, Recharts
+
+## Project Structure
+
+```text
+/
+├── backend/
+│   ├── prisma/
+│   ├── src/
+│   └── test/
+└── frontend/
+    └── src/
+```
+
 ## Backend Setup
 
 $ cd backend
@@ -8,6 +37,23 @@ $ npx prisma generate
 $ npx prisma migrate dev
 $ npx prisma db seed
 $ npm run start:dev
+
+Production-style migration command:
+
+```bash
+cd backend
+npx prisma migrate deploy
+```
+
+Backend environment variables:
+
+```env
+DATABASE_URL="postgresql://user:password@localhost:5432/mydb"
+JWT_ACCESS_SECRET="replace-with-a-real-secret"
+JWT_ACCESS_EXPIRES_IN="15m"
+PORT=3000
+FRONTEND_URL="http://localhost:5173,http://127.0.0.1:5173"
+```
 
 ## Frontend Setup
 
@@ -56,7 +102,7 @@ Frontend routes:
 - `/reports/:id/edit` authenticated `TEAM_MEMBER` draft/correction edit form
 - `/reports/:id/versions` authenticated `TEAM_MEMBER` version history
 - `/reports/:id/versions/:versionNumber` authenticated `TEAM_MEMBER` read-only version detail
-- `/manager/dashboard` authenticated `MANAGER` shell
+- `/manager/dashboard` authenticated `MANAGER` dashboard
 - `/manager/reports` authenticated `MANAGER` team reports table
 - `/manager/reports/:id` authenticated `MANAGER` report review page
 - `/manager/reports/:id/versions/:versionNumber` authenticated `MANAGER` read-only version detail
@@ -123,6 +169,45 @@ Dashboard values are backend-defined. The frontend does not recompute compliance
 Route-level lazy loading is enabled for major frontend pages, including the manager dashboard and report pages.
 
 AI is not implemented yet.
+
+## Testing
+
+Backend:
+
+```bash
+cd backend
+npm run build
+npm run lint
+npm run test:e2e
+npx prisma validate
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm run build
+npm run lint
+npm run test
+```
+
+## Security Decisions
+
+- JWT access tokens are stored only in an HTTP-only cookie named `access_token`
+- Public registration always creates `TEAM_MEMBER`; no public manager signup exists
+- Backend guards enforce authentication and role authorization
+- Report ownership, status, current version, reviewer id, and user id are never trusted from client payloads
+- Password hashes and JWTs are not returned by API responses
+- Production cookies use `secure: true`; local development uses non-secure cookies for `localhost`
+
+Deployment note: current cookie settings use `sameSite: "lax"`, which works well for same-site or same-registrable-domain deployments. If frontend and backend are deployed truly cross-site, cookie settings may need an explicit `sameSite: "none"` plus secure HTTPS.
+
+## Future Improvements
+
+- AI-assisted report drafting and summarization
+- Manager dashboard drilldowns and exports
+- Admin-managed invitations and role changes
+- Route-level prefetching for frequently used pages
 
 ## Projects
 

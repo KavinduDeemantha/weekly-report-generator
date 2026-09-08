@@ -39,7 +39,8 @@ export function ReportVersionsPage() {
       </div>
 
       <div className="overflow-hidden rounded-lg border border-border bg-background">
-        <table className="w-full text-left text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[680px] text-left text-sm">
           <thead className="border-b border-border bg-slate-50 text-xs uppercase text-muted-foreground">
             <tr>
               <th className="px-4 py-3 font-medium">Version</th>
@@ -74,6 +75,7 @@ export function ReportVersionsPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </section>
   );

@@ -41,7 +41,8 @@ export function ManagerUsersPage() {
 
       {usersQuery.data && usersQuery.data.data.length > 0 ? (
         <div className="overflow-hidden rounded-lg border border-border bg-background">
-          <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] text-left text-sm">
             <thead className="border-b border-border bg-slate-50 text-xs uppercase text-muted-foreground">
               <tr>
                 <th className="px-4 py-3 font-medium">Name</th>
@@ -69,6 +70,7 @@ export function ManagerUsersPage() {
               ))}
             </tbody>
           </table>
+          </div>
           <div className="flex items-center justify-between border-t border-border px-4 py-3">
             <p className="text-sm text-muted-foreground">
               Page {usersQuery.data.meta.page} of {totalPages}

@@ -1,6 +1,6 @@
 import { X } from 'lucide-react';
+import { useEffect, useId } from 'react';
 import { Button } from './button';
-import { cn } from '../../lib/utils';
 
 type DialogProps = {
   children: React.ReactNode;
@@ -17,28 +17,57 @@ export function Dialog({
   onClose,
   title,
 }: DialogProps) {
+  const titleId = useId();
+  const descriptionId = useId();
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) {
     return null;
   }
 
   return (
     <div
-      aria-labelledby="dialog-title"
+      aria-describedby={description ? descriptionId : undefined}
+      aria-labelledby={titleId}
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 py-6"
       role="dialog"
+      onMouseDown={onClose}
     >
-      <div className="w-full max-w-lg rounded-lg border border-border bg-background shadow-lg">
+      <div
+        className="max-h-[calc(100vh-3rem)] w-full max-w-lg overflow-y-auto rounded-lg border border-border bg-background shadow-lg"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
         <div className="flex items-start justify-between gap-4 border-b border-border p-5">
           <div>
             <h2
               className="text-lg font-semibold tracking-normal"
-              id="dialog-title"
+              id={titleId}
             >
               {title}
             </h2>
             {description ? (
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p
+                className="mt-1 text-sm text-muted-foreground"
+                id={descriptionId}
+              >
                 {description}
               </p>
             ) : null}
@@ -53,7 +82,7 @@ export function Dialog({
             <X className="h-4 w-4" aria-hidden="true" />
           </Button>
         </div>
-        <div className={cn('p-5')}>{children}</div>
+        <div className="p-5">{children}</div>
       </div>
     </div>
   );

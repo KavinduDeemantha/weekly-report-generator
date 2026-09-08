@@ -52,7 +52,7 @@ export function ReviewFeedback({
             <AlertCircle className="mt-1 h-4 w-4 flex-none" aria-hidden="true" />
             <AlertDescription>
               <span className="block font-medium">Changes requested</span>
-              <span className="mt-1 block">
+              <span className="mt-1 block break-words">
                 {latestCorrectionFeedback.comment}
               </span>
               <span className="mt-2 block text-xs">
@@ -85,7 +85,7 @@ export function ReviewFeedback({
                     {formatDateTime(review.createdAt)}
                   </span>
                 </div>
-                <p className="mt-2 text-sm">
+                <p className="mt-2 break-words text-sm">
                   {review.comment ?? `${review.reviewer.name} approved this report.`}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -196,7 +196,7 @@ function SimpleList<T>({
           <ul className="space-y-2">
             {items.map((item, index) => (
               <li className="rounded-md bg-slate-50 p-3 text-sm" key={index}>
-                {getText(item)}
+                <span className="break-words">{getText(item)}</span>
               </li>
             ))}
           </ul>
@@ -235,7 +235,7 @@ function BlockersList({ blockers }: { blockers: Blocker[] }) {
                   <Badge>Open</Badge>
                 )}
               </div>
-              <p className="mt-2 text-sm">{blocker.description}</p>
+              <p className="mt-2 break-words text-sm">{blocker.description}</p>
             </div>
           ))
         )}
@@ -265,7 +265,7 @@ function AchievementsList({ achievements }: { achievements: Achievement[] }) {
                 ) : (
                   <CheckCircle2 className="mt-0.5 h-4 w-4 text-muted-foreground" aria-hidden="true" />
                 )}
-                <p className="text-sm">{achievement.description}</p>
+                <p className="break-words text-sm">{achievement.description}</p>
               </div>
             </div>
           ))
