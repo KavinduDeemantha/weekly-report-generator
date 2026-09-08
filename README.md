@@ -57,6 +57,11 @@ Frontend routes:
 - `/reports/:id/versions` authenticated `TEAM_MEMBER` version history
 - `/reports/:id/versions/:versionNumber` authenticated `TEAM_MEMBER` read-only version detail
 - `/manager/dashboard` authenticated `MANAGER` shell
+- `/manager/reports` authenticated `MANAGER` team reports table
+- `/manager/reports/:id` authenticated `MANAGER` report review page
+- `/manager/reports/:id/versions/:versionNumber` authenticated `MANAGER` read-only version detail
+- `/manager/projects` authenticated `MANAGER` project management
+- `/manager/users` authenticated `MANAGER` read-only users list
 - `/` redirects by role: manager to `/manager/dashboard`, team member to `/reports`, unauthenticated user to `/login`
 
 Frontend route guards are for user experience only. Backend authorization remains the security boundary.
@@ -77,6 +82,21 @@ Lifecycle behavior in the UI:
 - `APPROVED`: read-only
 
 Submit and resubmit actions ask for confirmation because submitted content becomes read-only until a manager action. Version history pages are always read-only and display immutable historical report content plus reviews linked to each version.
+
+## Frontend Manager Operations
+
+The manager reports page consumes `GET /manager/reports` with pagination plus status, team-member, project, and date-range filters. List rows show summary data only; full report content is loaded on the review page.
+
+The manager report review page consumes `GET /manager/reports/:id` and reuses the shared report display components used by the member UI. Review actions are shown only when a report is `SUBMITTED`:
+
+- Request Changes opens a validated comment form and calls `POST /manager/reports/:id/request-changes`
+- Approve asks for confirmation and calls `POST /manager/reports/:id/approve`
+
+After review actions, the frontend invalidates manager report detail/list queries and dashboard queries so stale review state is refreshed from the backend. Managers can inspect immutable version snapshots through the manager version detail route.
+
+Project management consumes the existing `/projects` API. Managers can create, edit, and soft-deactivate projects; duplicate-name and validation errors are displayed through the shared API error handling. User management is read-only because the backend currently exposes only `GET /users`.
+
+Dashboard charts are not implemented yet.
 
 ## Projects
 

@@ -21,9 +21,9 @@ const memberNav: NavItem[] = [
 
 const managerNav: NavItem[] = [
   { label: 'Dashboard', href: '/manager/dashboard', icon: LayoutDashboard },
-  { label: 'Team Reports', href: '/manager/dashboard', icon: FileText },
-  { label: 'Projects', href: '/manager/dashboard', icon: FolderKanban },
-  { label: 'Users', href: '/manager/dashboard', icon: Users },
+  { label: 'Team Reports', href: '/manager/reports', icon: FileText },
+  { label: 'Projects', href: '/manager/projects', icon: FolderKanban },
+  { label: 'Users', href: '/manager/users', icon: Users },
 ];
 
 export function AppLayout() {

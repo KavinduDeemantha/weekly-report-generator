@@ -4,6 +4,7 @@ import { ErrorState, PageLoading } from '../components/common/PageState';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { getErrorMessage } from '../api/errors';
 import { dashboardApi } from '../features/dashboard/api';
+import { dashboardKeys } from '../features/dashboard/query-keys';
 
 const metricCards = [
   {
@@ -36,7 +37,7 @@ const metricCards = [
 
 export function ManagerDashboardPage() {
   const summaryQuery = useQuery({
-    queryKey: ['dashboard', 'summary'],
+    queryKey: dashboardKeys.summary(),
     queryFn: dashboardApi.getSummary,
   });
 

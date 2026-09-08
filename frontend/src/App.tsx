@@ -3,6 +3,11 @@ import { AppLayout } from './components/layout/AppLayout';
 import { LoginPage } from './features/auth/LoginPage';
 import { RegisterPage } from './features/auth/RegisterPage';
 import { ManagerDashboardPage } from './pages/ManagerDashboardPage';
+import { ManagerProjectsPage } from './pages/ManagerProjectsPage';
+import { ManagerReportDetailPage } from './pages/ManagerReportDetailPage';
+import { ManagerReportsPage } from './pages/ManagerReportsPage';
+import { ManagerReportVersionDetailPage } from './pages/ManagerReportVersionDetailPage';
+import { ManagerUsersPage } from './pages/ManagerUsersPage';
 import { NewReportPage } from './pages/NewReportPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { EditReportPage } from './pages/EditReportPage';
@@ -51,6 +56,17 @@ export function App() {
               path="/manager/dashboard"
               element={<ManagerDashboardPage />}
             />
+            <Route path="/manager/reports" element={<ManagerReportsPage />} />
+            <Route
+              path="/manager/reports/:id"
+              element={<ManagerReportDetailPage />}
+            />
+            <Route
+              path="/manager/reports/:id/versions/:versionNumber"
+              element={<ManagerReportVersionDetailPage />}
+            />
+            <Route path="/manager/projects" element={<ManagerProjectsPage />} />
+            <Route path="/manager/users" element={<ManagerUsersPage />} />
           </Route>
         </Route>
       </Route>

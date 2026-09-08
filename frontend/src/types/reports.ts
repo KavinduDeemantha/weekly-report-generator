@@ -26,6 +26,11 @@ export type ReportSummary = {
   currentVersion: number;
   createdAt: string;
   updatedAt: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+  };
   project: {
     id: string;
     name: string;
@@ -98,6 +103,7 @@ export type ReportDetail = ReportSummary & {
   };
   reviews: Review[];
   latestCorrectionFeedback: Review | null;
+  versionSummaries?: ReportVersionSummary[];
 };
 
 export type PaginatedReports = {

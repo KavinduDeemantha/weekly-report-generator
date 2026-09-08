@@ -63,7 +63,7 @@ describe('route guards', () => {
 
   it('blocks team members from manager routes', async () => {
     renderWithAuth({
-      initialPath: '/manager/dashboard',
+      initialPath: '/manager/reports',
       user: {
         id: 'member-1',
         name: 'Team Member',
