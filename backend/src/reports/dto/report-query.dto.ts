@@ -1,5 +1,13 @@
 import { Type } from 'class-transformer';
-import { IsDateString, IsEnum, IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsUUID,
+  Max,
+  Min,
+} from 'class-validator';
 import { ReportStatus } from '../../generated/prisma/enums.js';
 
 export class ReportQueryDto {
@@ -23,6 +31,10 @@ export class ReportQueryDto {
   @IsOptional()
   @IsUUID()
   projectId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  userId?: string;
 
   @IsOptional()
   @IsDateString()

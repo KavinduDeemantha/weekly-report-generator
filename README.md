@@ -47,7 +47,11 @@ Example:
 
 ## Reports
 
-Current report lifecycle: `DRAFT -> SUBMITTED`. Manager review, request changes, approval, and resubmission are not implemented yet.
+Current report lifecycle:
+
+`DRAFT -> SUBMITTED -> NEEDS_CORRECTION -> SUBMITTED -> APPROVED`
+
+Supported transitions are enforced by the backend. Clients cannot set `userId`, `status`, `currentVersion`, or `reviewerId` through request bodies.
 
 Team-member report routes:
 
@@ -56,10 +60,32 @@ Team-member report routes:
 - `GET /reports/:id`
 - `PATCH /reports/:id`
 - `POST /reports/:id/submit`
+- `POST /reports/:id/resubmit`
+- `GET /reports/:id/versions`
+- `GET /reports/:id/versions/:versionNumber`
 
 Report ownership comes from the authenticated cookie session. Request bodies cannot set `userId`, `status`, or `currentVersion`. New reports are always `DRAFT` with `currentVersion` 1 and a first `ReportVersion`.
 
-Dates are accepted as `YYYY-MM-DD` and stored as UTC start-of-day values. Draft edits update the current draft `ReportVersion`; provided child collections are replaced deterministically and omitted child collections are left unchanged. Submitted reports are read-only for team members.
+Dates are accepted as `YYYY-MM-DD` and stored as UTC start-of-day values. Draft edits update the current draft `ReportVersion`; provided child collections are replaced deterministically and omitted child collections are left unchanged.
+
+When a manager requests changes, the submitted version remains immutable. The first member correction edit creates `currentVersion + 1`; later correction edits update that unsubmitted correction version. Resubmitting does not increment the version. Submitted and approved reports are read-only for team members.
+
+Managers review reports through:
+
+- `GET /manager/reports?page=1&limit=10&status=SUBMITTED&userId=<userId>&projectId=<projectId>&from=2026-09-01&to=2026-09-30`
+- `GET /manager/reports/:id`
+- `POST /manager/reports/:id/request-changes`
+- `POST /manager/reports/:id/approve`
+
+Request changes body:
+
+```json
+{
+  "comment": "Please clarify the main deliverable."
+}
+```
+
+`Report` stores ownership, project, week range, status, and the current version number. `ReportVersion` stores the versioned weekly content: notes, tasks, next-week tasks, blockers, achievements, time entries, and reviews tied to that exact version.
 
 Example create report request:
 

@@ -6,7 +6,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client.js';
-import { ReportStatus, TaskStatus } from '../generated/prisma/enums.js';
+import {
+  ReportStatus,
+  ReviewAction,
+  Role,
+  TaskStatus,
+} from '../generated/prisma/enums.js';
 import {
   createPaginationMeta,
   normalizePagination,
@@ -16,9 +21,32 @@ import { ProjectsService } from '../projects/projects.service.js';
 import { CreateReportDto } from './dto/create-report.dto.js';
 import { ReportQueryDto } from './dto/report-query.dto.js';
 import { UpdateReportDto } from './dto/update-report.dto.js';
-import { PaginatedReports, ReportDetail } from './reports.types.js';
+import {
+  PaginatedReports,
+  ReportDetail,
+  ReportVersionDetail,
+  ReportVersionSummary,
+} from './reports.types.js';
 
-const reportSummarySelect = {
+export const reviewSelect = {
+  id: true,
+  action: true,
+  comment: true,
+  createdAt: true,
+  reviewer: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+  reportVersion: {
+    select: {
+      versionNumber: true,
+    },
+  },
+} as const;
+
+export const reportSummarySelect = {
   id: true,
   weekStart: true,
   weekEnd: true,
@@ -32,68 +60,94 @@ const reportSummarySelect = {
       name: true,
     },
   },
+  user: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+    },
+  },
 } as const;
 
-const reportDetailSelect = {
+export const reportVersionContentSelect = {
+  id: true,
+  versionNumber: true,
+  notes: true,
+  submittedAt: true,
+  createdAt: true,
+  tasks: {
+    orderBy: { createdAt: 'asc' },
+    select: {
+      id: true,
+      name: true,
+      priority: true,
+      plannedPercentage: true,
+      actualPercentage: true,
+      status: true,
+      plannedHours: true,
+      actualHours: true,
+      deliverable: true,
+    },
+  },
+  nextWeekTasks: {
+    orderBy: { createdAt: 'asc' },
+    select: {
+      id: true,
+      description: true,
+    },
+  },
+  blockers: {
+    orderBy: { createdAt: 'asc' },
+    select: {
+      id: true,
+      description: true,
+      isKeyIssue: true,
+      isResolved: true,
+    },
+  },
+  achievements: {
+    orderBy: { createdAt: 'asc' },
+    select: {
+      id: true,
+      description: true,
+      isKeyAchievement: true,
+    },
+  },
+  timeEntries: {
+    orderBy: { createdAt: 'asc' },
+    select: {
+      id: true,
+      type: true,
+      hours: true,
+    },
+  },
+  reviews: {
+    orderBy: { createdAt: 'desc' },
+    select: reviewSelect,
+  },
+} as const;
+
+export const reportDetailSelect = {
   ...reportSummarySelect,
   userId: true,
   versions: {
     orderBy: { versionNumber: 'desc' },
     take: 1,
-    select: {
-      id: true,
-      versionNumber: true,
-      notes: true,
-      submittedAt: true,
-      tasks: {
-        orderBy: { createdAt: 'asc' },
-        select: {
-          id: true,
-          name: true,
-          priority: true,
-          plannedPercentage: true,
-          actualPercentage: true,
-          status: true,
-          plannedHours: true,
-          actualHours: true,
-          deliverable: true,
-        },
-      },
-      nextWeekTasks: {
-        orderBy: { createdAt: 'asc' },
-        select: {
-          id: true,
-          description: true,
-        },
-      },
-      blockers: {
-        orderBy: { createdAt: 'asc' },
-        select: {
-          id: true,
-          description: true,
-          isKeyIssue: true,
-          isResolved: true,
-        },
-      },
-      achievements: {
-        orderBy: { createdAt: 'asc' },
-        select: {
-          id: true,
-          description: true,
-          isKeyAchievement: true,
-        },
-      },
-      timeEntries: {
-        orderBy: { createdAt: 'asc' },
-        select: {
-          id: true,
-          type: true,
-          hours: true,
-        },
-      },
-    },
+    select: reportVersionContentSelect,
+  },
+  reviews: {
+    orderBy: { createdAt: 'desc' },
+    select: reviewSelect,
   },
 } as const;
+
+type ReportDetailRecord = Prisma.ReportGetPayload<{
+  select: typeof reportDetailSelect;
+}>;
+
+type ReportVersionContentRecord = Prisma.ReportVersionGetPayload<{
+  select: typeof reportVersionContentSelect;
+}>;
 
 @Injectable()
 export class ReportsService {
@@ -201,14 +255,7 @@ export class ReportsService {
       const report = await this.prisma.$transaction(async (tx) => {
         const existing = await tx.report.findUnique({
           where: { id },
-          select: {
-            id: true,
-            userId: true,
-            status: true,
-            weekStart: true,
-            weekEnd: true,
-            currentVersion: true,
-          },
+          select: reportDetailSelect,
         });
 
         if (!existing) {
@@ -216,7 +263,7 @@ export class ReportsService {
         }
 
         ensureOwned(existing.userId, userId);
-        ensureDraftEditable(existing.status);
+        ensureMemberEditable(existing.status);
 
         const weekStart =
           dto.weekStart !== undefined
@@ -240,38 +287,64 @@ export class ReportsService {
           }
         }
 
-        const currentVersion = await tx.reportVersion.findUnique({
-          where: {
-            reportId_versionNumber: {
-              reportId: existing.id,
-              versionNumber: existing.currentVersion,
-            },
-          },
-          select: { id: true },
-        });
+        const currentVersion = getCurrentVersion(existing);
+        const reportUpdateData: Prisma.ReportUpdateInput = {
+          weekStart,
+          weekEnd,
+        };
 
-        if (!currentVersion) {
-          throw new NotFoundException('Current report version not found');
+        if (dto.projectId !== undefined) {
+          reportUpdateData.project = { connect: { id: dto.projectId } };
         }
 
         await tx.report.update({
           where: { id },
-          data: {
-            weekStart,
-            weekEnd,
-            projectId: dto.projectId,
-          },
+          data: reportUpdateData,
         });
 
-        await tx.reportVersion.update({
-          where: { id: currentVersion.id },
-          data:
-            dto.notes !== undefined
-              ? { notes: normalizeOptionalString(dto.notes) }
-              : {},
-        });
+        if (
+          existing.status === ReportStatus.NEEDS_CORRECTION &&
+          currentVersion.submittedAt !== null
+        ) {
+          const nextVersionNumber = existing.currentVersion + 1;
 
-        await replaceDraftContent(tx, currentVersion.id, dto);
+          await tx.reportVersion.create({
+            data: {
+              reportId: existing.id,
+              versionNumber: nextVersionNumber,
+              notes:
+                dto.notes !== undefined
+                  ? normalizeOptionalString(dto.notes)
+                  : currentVersion.notes,
+              tasks: { create: mapTasksFromVersion(currentVersion, dto) },
+              nextWeekTasks: {
+                create: mapNextWeekTasksFromVersion(currentVersion, dto),
+              },
+              blockers: { create: mapBlockersFromVersion(currentVersion, dto) },
+              achievements: {
+                create: mapAchievementsFromVersion(currentVersion, dto),
+              },
+              timeEntries: {
+                create: mapTimeEntriesFromVersion(currentVersion, dto),
+              },
+            },
+          });
+
+          await tx.report.update({
+            where: { id },
+            data: { currentVersion: nextVersionNumber },
+          });
+        } else {
+          await tx.reportVersion.update({
+            where: { id: currentVersion.id },
+            data:
+              dto.notes !== undefined
+                ? { notes: normalizeOptionalString(dto.notes) }
+                : {},
+          });
+
+          await replaceDraftContent(tx, currentVersion.id, dto);
+        }
 
         return tx.report.findUniqueOrThrow({
           where: { id },
@@ -329,7 +402,130 @@ export class ReportsService {
     return mapReportDetail(report);
   }
 
-  private async findReportDetailOrThrow(id: string) {
+  async resubmitCorrectedReport(
+    id: string,
+    userId: string,
+  ): Promise<ReportDetail> {
+    const report = await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.report.findUnique({
+        where: { id },
+        select: reportDetailSelect,
+      });
+
+      if (!existing) {
+        throw new NotFoundException('Report not found');
+      }
+
+      ensureOwned(existing.userId, userId);
+
+      if (existing.status !== ReportStatus.NEEDS_CORRECTION) {
+        throw new BadRequestException(
+          'Only reports needing correction can be resubmitted',
+        );
+      }
+
+      const version = getCurrentVersion(existing);
+
+      if (version.submittedAt !== null) {
+        throw new BadRequestException('Current correction version is already submitted');
+      }
+
+      validateReportReadyForSubmission(existing);
+
+      const updateResult = await tx.report.updateMany({
+        where: { id, status: ReportStatus.NEEDS_CORRECTION },
+        data: { status: ReportStatus.SUBMITTED },
+      });
+
+      if (updateResult.count !== 1) {
+        throw new BadRequestException(
+          'Only reports needing correction can be resubmitted',
+        );
+      }
+
+      await tx.reportVersion.update({
+        where: { id: version.id },
+        data: { submittedAt: new Date() },
+      });
+
+      return tx.report.findUniqueOrThrow({
+        where: { id },
+        select: reportDetailSelect,
+      });
+    });
+
+    return mapReportDetail(report);
+  }
+
+  async listVersions(
+    id: string,
+    user: { id: string; role: Role },
+  ): Promise<ReportVersionSummary[]> {
+    const report = await this.prisma.report.findUnique({
+      where: { id },
+      select: {
+        userId: true,
+        currentVersion: true,
+        versions: {
+          orderBy: { versionNumber: 'asc' },
+          select: {
+            versionNumber: true,
+            createdAt: true,
+            submittedAt: true,
+          },
+        },
+      },
+    });
+
+    if (!report) {
+      throw new NotFoundException('Report not found');
+    }
+
+    ensureReportAccessible(report.userId, user);
+
+    return report.versions.map((version) => ({
+      ...version,
+      isCurrent: version.versionNumber === report.currentVersion,
+    }));
+  }
+
+  async getVersionDetail(
+    id: string,
+    versionNumber: number,
+    user: { id: string; role: Role },
+  ): Promise<ReportVersionDetail> {
+    const report = await this.prisma.report.findUnique({
+      where: { id },
+      select: {
+        userId: true,
+        currentVersion: true,
+      },
+    });
+
+    if (!report) {
+      throw new NotFoundException('Report not found');
+    }
+
+    ensureReportAccessible(report.userId, user);
+
+    const version = await this.prisma.reportVersion.findUnique({
+      where: {
+        reportId_versionNumber: {
+          reportId: id,
+          versionNumber,
+        },
+      },
+      select: reportVersionContentSelect,
+    });
+
+    if (!version) {
+      throw new NotFoundException('Report version not found');
+    }
+
+    return mapVersionDetail(version, report.currentVersion);
+  }
+
+  private async findReportDetailOrThrow(id: string): Promise<ReportDetailRecord> {
     const report = await this.prisma.report.findUnique({
       where: { id },
       select: reportDetailSelect,
@@ -343,7 +539,7 @@ export class ReportsService {
   }
 }
 
-function parseBusinessDate(value: string, field: string): Date {
+export function parseBusinessDate(value: string, field: string): Date {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     throw new BadRequestException(`${field} must use YYYY-MM-DD format`);
   }
@@ -384,10 +580,26 @@ function ensureOwned(ownerId: string, userId: string): void {
   }
 }
 
-function ensureDraftEditable(status: ReportStatus): void {
-  if (status !== ReportStatus.DRAFT) {
-    throw new BadRequestException('Only draft reports can be edited');
+function ensureMemberEditable(status: ReportStatus): void {
+  if (
+    status !== ReportStatus.DRAFT &&
+    status !== ReportStatus.NEEDS_CORRECTION
+  ) {
+    throw new BadRequestException(
+      'Only draft reports or reports needing correction can be edited',
+    );
   }
+}
+
+function ensureReportAccessible(
+  ownerId: string,
+  user: { id: string; role: Role },
+): void {
+  if (user.role === Role.MANAGER) {
+    return;
+  }
+
+  ensureOwned(ownerId, user.id);
 }
 
 function validateReportReadyForSubmission(
@@ -445,10 +657,45 @@ function mapTasks(tasks = [] as NonNullable<CreateReportDto['tasks']>) {
   }));
 }
 
+function mapExistingTasks(version: ReportVersionContentRecord) {
+  return version.tasks.map((task) => ({
+    name: task.name,
+    priority: task.priority,
+    plannedPercentage: task.plannedPercentage,
+    actualPercentage: task.actualPercentage,
+    status: task.status,
+    plannedHours: task.plannedHours,
+    actualHours: task.actualHours,
+    deliverable: task.deliverable,
+  }));
+}
+
+function mapTasksFromVersion(
+  version: ReportVersionContentRecord,
+  dto: UpdateReportDto,
+) {
+  return dto.tasks !== undefined ? mapTasks(dto.tasks) : mapExistingTasks(version);
+}
+
 function mapNextWeekTasks(tasks = [] as NonNullable<CreateReportDto['nextWeekTasks']>) {
   return tasks.map((task) => ({
     description: task.description.trim(),
   }));
+}
+
+function mapExistingNextWeekTasks(version: ReportVersionContentRecord) {
+  return version.nextWeekTasks.map((task) => ({
+    description: task.description,
+  }));
+}
+
+function mapNextWeekTasksFromVersion(
+  version: ReportVersionContentRecord,
+  dto: UpdateReportDto,
+) {
+  return dto.nextWeekTasks !== undefined
+    ? mapNextWeekTasks(dto.nextWeekTasks)
+    : mapExistingNextWeekTasks(version);
 }
 
 function mapBlockers(blockers = [] as NonNullable<CreateReportDto['blockers']>) {
@@ -457,6 +704,23 @@ function mapBlockers(blockers = [] as NonNullable<CreateReportDto['blockers']>) 
     isKeyIssue: blocker.isKeyIssue,
     isResolved: blocker.isResolved,
   }));
+}
+
+function mapExistingBlockers(version: ReportVersionContentRecord) {
+  return version.blockers.map((blocker) => ({
+    description: blocker.description,
+    isKeyIssue: blocker.isKeyIssue,
+    isResolved: blocker.isResolved,
+  }));
+}
+
+function mapBlockersFromVersion(
+  version: ReportVersionContentRecord,
+  dto: UpdateReportDto,
+) {
+  return dto.blockers !== undefined
+    ? mapBlockers(dto.blockers)
+    : mapExistingBlockers(version);
 }
 
 function mapAchievements(
@@ -468,6 +732,22 @@ function mapAchievements(
   }));
 }
 
+function mapExistingAchievements(version: ReportVersionContentRecord) {
+  return version.achievements.map((achievement) => ({
+    description: achievement.description,
+    isKeyAchievement: achievement.isKeyAchievement,
+  }));
+}
+
+function mapAchievementsFromVersion(
+  version: ReportVersionContentRecord,
+  dto: UpdateReportDto,
+) {
+  return dto.achievements !== undefined
+    ? mapAchievements(dto.achievements)
+    : mapExistingAchievements(version);
+}
+
 function mapTimeEntries(
   timeEntries = [] as NonNullable<CreateReportDto['timeEntries']>,
 ) {
@@ -475,6 +755,22 @@ function mapTimeEntries(
     type: entry.type,
     hours: entry.hours,
   }));
+}
+
+function mapExistingTimeEntries(version: ReportVersionContentRecord) {
+  return version.timeEntries.map((entry) => ({
+    type: entry.type,
+    hours: entry.hours,
+  }));
+}
+
+function mapTimeEntriesFromVersion(
+  version: ReportVersionContentRecord,
+  dto: UpdateReportDto,
+) {
+  return dto.timeEntries !== undefined
+    ? mapTimeEntries(dto.timeEntries)
+    : mapExistingTimeEntries(version);
 }
 
 async function replaceDraftContent(
@@ -530,25 +826,69 @@ async function replaceDraftContent(
   }
 }
 
-function mapReportDetail(
-  report: Awaited<ReturnType<ReportsService['findReportDetailOrThrow']>>,
-): ReportDetail {
+function getCurrentVersion(report: ReportDetailRecord): ReportVersionContentRecord {
   const version = report.versions[0];
 
   if (!version) {
     throw new NotFoundException('Current report version not found');
   }
 
+  return version;
+}
+
+export function mapReviews(reviews: ReportDetailRecord['reviews']) {
+  return reviews.map((review) => ({
+    id: review.id,
+    action: review.action,
+    comment: review.comment,
+    versionNumber: review.reportVersion.versionNumber,
+    reviewer: review.reviewer,
+    createdAt: review.createdAt,
+  }));
+}
+
+export function mapReportDetail(report: ReportDetailRecord): ReportDetail {
+  const version = getCurrentVersion(report);
+  const reviews = mapReviews(report.reviews);
+  const latestCorrectionFeedback =
+    reviews.find((review) => review.action === ReviewAction.REQUEST_CHANGES) ??
+    null;
+
   return {
     id: report.id,
     weekStart: report.weekStart,
     weekEnd: report.weekEnd,
     project: report.project,
+    user: report.user,
     status: report.status,
     currentVersion: report.currentVersion,
     createdAt: report.createdAt,
     updatedAt: report.updatedAt,
-    version,
+    version: {
+      ...version,
+      reviews: mapReviews(version.reviews),
+    },
+    reviews,
+    latestCorrectionFeedback,
+  };
+}
+
+function mapVersionDetail(
+  version: ReportVersionContentRecord,
+  currentVersion: number,
+): ReportVersionDetail {
+  return {
+    versionNumber: version.versionNumber,
+    createdAt: version.createdAt,
+    submittedAt: version.submittedAt,
+    isCurrent: version.versionNumber === currentVersion,
+    notes: version.notes,
+    tasks: version.tasks,
+    nextWeekTasks: version.nextWeekTasks,
+    blockers: version.blockers,
+    achievements: version.achievements,
+    timeEntries: version.timeEntries,
+    reviews: mapReviews(version.reviews),
   };
 }
 

@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseIntPipe,
   ParseUUIDPipe,
   Patch,
   Post,
@@ -62,5 +63,32 @@ export class ReportsController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<ReportDetail> {
     return this.reportsService.submitDraftReport(id, user.id);
+  }
+
+  @Post(':id/resubmit')
+  resubmitReport(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ReportDetail> {
+    return this.reportsService.resubmitCorrectedReport(id, user.id);
+  }
+
+  @Roles(Role.TEAM_MEMBER, Role.MANAGER)
+  @Get(':id/versions')
+  listVersions(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.reportsService.listVersions(id, user);
+  }
+
+  @Roles(Role.TEAM_MEMBER, Role.MANAGER)
+  @Get(':id/versions/:versionNumber')
+  getVersionDetail(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('versionNumber', ParseIntPipe) versionNumber: number,
+  ) {
+    return this.reportsService.getVersionDetail(id, versionNumber, user);
   }
 }
