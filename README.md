@@ -87,6 +87,29 @@ Request changes body:
 
 `Report` stores ownership, project, week range, status, and the current version number. `ReportVersion` stores the versioned weekly content: notes, tasks, next-week tasks, blockers, achievements, time entries, and reviews tied to that exact version.
 
+## Manager Dashboard API
+
+Dashboard routes require `MANAGER`.
+
+- `GET /dashboard/summary`
+- `GET /dashboard/submission-status`
+- `GET /dashboard/task-trends`
+- `GET /dashboard/project-distribution`
+- `GET /dashboard/time-distribution`
+- `GET /dashboard/activity`
+
+Common filters:
+
+- `weekStart=2026-09-07` or `week=2026-09-07`
+- `from=2026-09-01&to=2026-09-30`
+- `userId=<userId>`
+- `projectId=<projectId>`
+- `limit=20` for activity
+
+Summary metrics use selected-week semantics. Expected members are active `TEAM_MEMBER` users, optionally narrowed by `userId`. A compliant submission is a report for that week with status `SUBMITTED`, `NEEDS_CORRECTION`, or `APPROVED`. `DRAFT` and missing reports count as pending. `NEEDS_CORRECTION` still counts as submitted because the member did submit the report. Compliance rate is `compliant active members / total active members * 100`, with `0` returned when there are no matching active members.
+
+Dashboard content analytics use only each report's current `ReportVersion`. Historical versions are kept for audit/history and are not double-counted in task trends, project distribution, time distribution, or open blocker counts. Activity is derived from `ReportVersion.submittedAt` and `Review` rows, returning recent submitted, resubmitted, request-changes, and approval events.
+
 Example create report request:
 
 ```json

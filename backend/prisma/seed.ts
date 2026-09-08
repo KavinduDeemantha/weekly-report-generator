@@ -51,6 +51,10 @@ async function main() {
       name: 'Amal Dias',
       email: 'amal@gmail.com',
     },
+    {
+      name: 'Priya Jayawardena',
+      email: 'priya@gmail.com',
+    },
   ];
 
   const members = [];
@@ -111,11 +115,15 @@ async function main() {
     '2026-08-17',
     '2026-08-24',
     '2026-08-31',
+    '2026-09-07',
+    '2026-09-14',
   ].map((date) => new Date(`${date}T00:00:00.000Z`));
 
   await prisma.report.deleteMany({
     where: {
-      userId: members[0].id,
+      userId: {
+        in: members.map((member) => member.id),
+      },
       weekStart: {
         in: seededWeekStarts,
       },
@@ -134,6 +142,259 @@ async function main() {
         versionNumber: 1,
         submittedAt: null,
         notes: 'Draft report for manual editing.',
+      },
+    ],
+  });
+
+  await createSeedReport({
+    userId: members[0].id,
+    projectId: clientPortal.id,
+    weekStart: '2026-09-07',
+    weekEnd: '2026-09-13',
+    status: 'SUBMITTED',
+    currentVersion: 1,
+    versions: [
+      {
+        versionNumber: 1,
+        submittedAt: new Date('2026-09-13T09:00:00.000Z'),
+        notes: 'Submitted client portal progress.',
+        tasks: [
+          {
+            name: 'Build report filters',
+            priority: 'HIGH',
+            plannedPercentage: 100,
+            actualPercentage: 100,
+            status: 'COMPLETED',
+            plannedHours: 8,
+            actualHours: 7,
+            deliverable: 'Filter API',
+          },
+          {
+            name: 'Polish validation messages',
+            priority: 'MEDIUM',
+            plannedPercentage: 80,
+            actualPercentage: 60,
+            status: 'IN_PROGRESS',
+            plannedHours: 4,
+            actualHours: 3,
+            deliverable: 'Validation cleanup',
+          },
+        ],
+        blockers: [
+          {
+            description: 'Waiting for final copy',
+            isKeyIssue: true,
+            isResolved: false,
+          },
+        ],
+        timeEntries: [
+          { type: 'DEVELOPMENT', hours: 18 },
+          { type: 'TESTING', hours: 5 },
+        ],
+      },
+    ],
+  });
+
+  await createSeedReport({
+    userId: members[1].id,
+    projectId: internalTooling.id,
+    weekStart: '2026-09-07',
+    weekEnd: '2026-09-13',
+    status: 'APPROVED',
+    currentVersion: 1,
+    versions: [
+      {
+        versionNumber: 1,
+        submittedAt: new Date('2026-09-13T10:00:00.000Z'),
+        notes: 'Approved internal tooling progress.',
+        tasks: [
+          {
+            name: 'Improve seed data',
+            priority: 'MEDIUM',
+            plannedPercentage: 100,
+            actualPercentage: 100,
+            status: 'COMPLETED',
+            plannedHours: 5,
+            actualHours: 5,
+            deliverable: 'Dashboard seed dataset',
+          },
+          {
+            name: 'Document dashboard metrics',
+            priority: 'LOW',
+            plannedPercentage: 100,
+            actualPercentage: 100,
+            status: 'COMPLETED',
+            plannedHours: 3,
+            actualHours: 2.5,
+            deliverable: 'README section',
+          },
+        ],
+        review: {
+          reviewerId: manager.id,
+          action: 'APPROVED',
+          comment: null,
+        },
+        timeEntries: [
+          { type: 'DOCUMENTATION', hours: 6 },
+          { type: 'MEETINGS', hours: 2 },
+        ],
+      },
+    ],
+  });
+
+  await createSeedReport({
+    userId: members[2].id,
+    projectId: research.id,
+    weekStart: '2026-09-07',
+    weekEnd: '2026-09-13',
+    status: 'NEEDS_CORRECTION',
+    currentVersion: 1,
+    versions: [
+      {
+        versionNumber: 1,
+        submittedAt: new Date('2026-09-13T11:00:00.000Z'),
+        notes: 'Research report needing correction.',
+        tasks: [
+          {
+            name: 'Evaluate export options',
+            priority: 'HIGH',
+            plannedPercentage: 100,
+            actualPercentage: 70,
+            status: 'BLOCKED',
+            plannedHours: 8,
+            actualHours: 5,
+            deliverable: 'Export recommendation draft',
+          },
+          {
+            name: 'Prototype chart payloads',
+            priority: 'MEDIUM',
+            plannedPercentage: 100,
+            actualPercentage: 100,
+            status: 'COMPLETED',
+            plannedHours: 6,
+            actualHours: 6,
+            deliverable: 'Prototype JSON payloads',
+          },
+        ],
+        blockers: [
+          {
+            description: 'Need manager decision on export format',
+            isKeyIssue: true,
+            isResolved: false,
+          },
+          {
+            description: 'Local test data was incomplete',
+            isKeyIssue: false,
+            isResolved: true,
+          },
+        ],
+        review: {
+          reviewerId: manager.id,
+          action: 'REQUEST_CHANGES',
+          comment: 'Please add more detail about the blocked export task.',
+        },
+        timeEntries: [
+          { type: 'DEVELOPMENT', hours: 10 },
+          { type: 'TESTING', hours: 4 },
+          { type: 'MEETINGS', hours: 1 },
+        ],
+      },
+    ],
+  });
+
+  await createSeedReport({
+    userId: members[3].id,
+    projectId: clientPortal.id,
+    weekStart: '2026-09-07',
+    weekEnd: '2026-09-13',
+    status: 'DRAFT',
+    currentVersion: 1,
+    versions: [
+      {
+        versionNumber: 1,
+        submittedAt: null,
+        notes: 'Draft dashboard API report.',
+        tasks: [
+          {
+            name: 'Start dashboard controller',
+            priority: 'HIGH',
+            plannedPercentage: 100,
+            actualPercentage: 40,
+            status: 'IN_PROGRESS',
+            plannedHours: 8,
+            actualHours: 3,
+            deliverable: 'Controller draft',
+          },
+        ],
+        timeEntries: [
+          { type: 'DEVELOPMENT', hours: 8 },
+          { type: 'MEETINGS', hours: 1 },
+        ],
+      },
+    ],
+  });
+
+  await createSeedReport({
+    userId: members[1].id,
+    projectId: internalTooling.id,
+    weekStart: '2026-09-14',
+    weekEnd: '2026-09-20',
+    status: 'SUBMITTED',
+    currentVersion: 2,
+    versions: [
+      {
+        versionNumber: 1,
+        submittedAt: new Date('2026-09-20T09:00:00.000Z'),
+        notes: 'Original dashboard metrics implementation.',
+        tasks: [
+          {
+            name: 'Initial dashboard aggregation',
+            priority: 'HIGH',
+            plannedPercentage: 100,
+            actualPercentage: 85,
+            status: 'COMPLETED',
+            plannedHours: 10,
+            actualHours: 9,
+            deliverable: 'Initial aggregation service',
+          },
+        ],
+        review: {
+          reviewerId: manager.id,
+          action: 'REQUEST_CHANGES',
+          comment: 'Please make the current-version counting rule explicit.',
+        },
+      },
+      {
+        versionNumber: 2,
+        submittedAt: new Date('2026-09-21T09:00:00.000Z'),
+        notes: 'Corrected dashboard metrics implementation.',
+        tasks: [
+          {
+            name: 'Current-version analytics fix',
+            priority: 'HIGH',
+            plannedPercentage: 100,
+            actualPercentage: 100,
+            status: 'COMPLETED',
+            plannedHours: 6,
+            actualHours: 6,
+            deliverable: 'Corrected dashboard aggregation',
+          },
+          {
+            name: 'Dashboard E2E scenarios',
+            priority: 'MEDIUM',
+            plannedPercentage: 100,
+            actualPercentage: 100,
+            status: 'COMPLETED',
+            plannedHours: 4,
+            actualHours: 4,
+            deliverable: 'Dashboard test coverage',
+          },
+        ],
+        timeEntries: [
+          { type: 'DEVELOPMENT', hours: 12 },
+          { type: 'TESTING', hours: 6 },
+          { type: 'DOCUMENTATION', hours: 2 },
+        ],
       },
     ],
   });
@@ -244,6 +505,25 @@ async function createSeedReport(input: {
     versionNumber: number;
     submittedAt: Date | null;
     notes: string;
+    tasks?: Array<{
+      name: string;
+      priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+      plannedPercentage: number;
+      actualPercentage: number;
+      status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'BLOCKED';
+      plannedHours?: number;
+      actualHours?: number;
+      deliverable?: string;
+    }>;
+    blockers?: Array<{
+      description: string;
+      isKeyIssue: boolean;
+      isResolved: boolean;
+    }>;
+    timeEntries?: Array<{
+      type: 'DEVELOPMENT' | 'TESTING' | 'MEETINGS' | 'DOCUMENTATION' | 'OTHER';
+      hours: number;
+    }>;
     review?: {
       reviewerId: string;
       action: 'REQUEST_CHANGES' | 'APPROVED';
@@ -270,7 +550,7 @@ async function createSeedReport(input: {
         submittedAt: versionInput.submittedAt,
         notes: versionInput.notes,
         tasks: {
-          create: [
+          create: versionInput.tasks ?? [
             {
               name: `Version ${versionInput.versionNumber} implementation work`,
               priority: 'HIGH',
@@ -287,7 +567,7 @@ async function createSeedReport(input: {
           create: [{ description: 'Continue with the next milestone' }],
         },
         blockers: {
-          create: [
+          create: versionInput.blockers ?? [
             {
               description: 'No active blockers',
               isKeyIssue: false,
@@ -304,7 +584,7 @@ async function createSeedReport(input: {
           ],
         },
         timeEntries: {
-          create: [
+          create: versionInput.timeEntries ?? [
             { type: 'DEVELOPMENT', hours: 24 },
             { type: 'MEETINGS', hours: 3 },
           ],
