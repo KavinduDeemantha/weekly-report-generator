@@ -4,6 +4,7 @@ import { Pencil, Plus, Power } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { getErrorMessage } from '../api/errors';
+import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { EmptyState, ErrorState, PageLoading } from '../components/common/PageState';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -21,6 +22,8 @@ import type { Project } from '../types/projects';
 export function ManagerProjectsPage() {
   const [page, setPage] = useState(1);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [deactivatingProject, setDeactivatingProject] =
+    useState<Project | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -47,17 +50,18 @@ export function ManagerProjectsPage() {
   });
   const deactivateProject = useMutation({
     mutationFn: projectsApi.deactivate,
-    onSuccess: () => invalidateProjectQueries(queryClient),
+    onSuccess: async () => {
+      await invalidateProjectQueries(queryClient);
+      setDeactivatingProject(null);
+    },
   });
 
-  async function handleDeactivate(project: Project) {
-    const confirmed = window.confirm(
-      `Deactivate ${project.name}? Existing reports will keep their project reference.`,
-    );
-
-    if (confirmed) {
-      await deactivateProject.mutateAsync(project.id);
+  async function handleDeactivate() {
+    if (!deactivatingProject) {
+      return;
     }
+
+    await deactivateProject.mutateAsync(deactivatingProject.id);
   }
 
   return (
@@ -134,7 +138,7 @@ export function ManagerProjectsPage() {
                         type="button"
                         variant="outline"
                         disabled={!project.isActive || deactivateProject.isPending}
-                        onClick={() => void handleDeactivate(project)}
+                        onClick={() => setDeactivatingProject(project)}
                       >
                         <Power className="h-4 w-4" aria-hidden="true" />
                         Deactivate
@@ -211,6 +215,21 @@ export function ManagerProjectsPage() {
             setFormError(getErrorMessage(error));
           }
         }}
+      />
+
+      <ConfirmDialog
+        confirmLabel="Deactivate"
+        description={
+          deactivatingProject
+            ? `${deactivatingProject.name} will no longer be available for new reports. Existing reports keep their project reference.`
+            : ''
+        }
+        isConfirming={deactivateProject.isPending}
+        isOpen={Boolean(deactivatingProject)}
+        title="Deactivate project?"
+        variant="destructive"
+        onCancel={() => setDeactivatingProject(null)}
+        onConfirm={() => void handleDeactivate()}
       />
     </section>
   );

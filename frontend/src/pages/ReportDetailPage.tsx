@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { History, Pencil, Send } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { useState } from 'react';
+import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { ErrorState, PageLoading } from '../components/common/PageState';
 import { Button } from '../components/ui/button';
 import { getErrorMessage } from '../api/errors';
@@ -21,6 +22,9 @@ import {
 export function ReportDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [actionError, setActionError] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<
+    'submit' | 'resubmit' | null
+  >(null);
   const queryClient = useQueryClient();
 
   const reportQuery = useQuery({
@@ -66,25 +70,19 @@ export function ReportDetailPage() {
   const canResubmit = canResubmitReportStatus(report.status);
   const isMutating = submitMutation.isPending || resubmitMutation.isPending;
 
-  async function handleSubmitAction(kind: 'submit' | 'resubmit') {
-    const confirmed = window.confirm(
-      kind === 'submit'
-        ? 'Submit this report? It becomes read-only until a manager takes action.'
-        : 'Resubmit this corrected report for manager review?',
-    );
-
-    if (!confirmed) {
+  async function confirmSubmitAction() {
+    if (!pendingAction) {
       return;
     }
-
     setActionError(null);
 
     try {
-      if (kind === 'submit') {
+      if (pendingAction === 'submit') {
         await submitMutation.mutateAsync();
       } else {
         await resubmitMutation.mutateAsync();
       }
+      setPendingAction(null);
     } catch (error) {
       setActionError(getErrorMessage(error));
     }
@@ -108,7 +106,7 @@ export function ReportDetailPage() {
           <Button
             type="button"
             disabled={isMutating}
-            onClick={() => void handleSubmitAction('submit')}
+            onClick={() => setPendingAction('submit')}
           >
             <Send className="h-4 w-4" aria-hidden="true" />
             Submit
@@ -118,7 +116,7 @@ export function ReportDetailPage() {
           <Button
             type="button"
             disabled={isMutating}
-            onClick={() => void handleSubmitAction('resubmit')}
+            onClick={() => setPendingAction('resubmit')}
           >
             <Send className="h-4 w-4" aria-hidden="true" />
             Resubmit
@@ -140,6 +138,24 @@ export function ReportDetailPage() {
         reviews={report.reviews}
       />
       <ReportContent report={report} />
+
+      <ConfirmDialog
+        confirmLabel={pendingAction === 'resubmit' ? 'Resubmit' : 'Submit'}
+        description={
+          pendingAction === 'resubmit'
+            ? 'This corrected report will be sent back to your manager for review.'
+            : 'This report becomes read-only until a manager takes action.'
+        }
+        isConfirming={isMutating}
+        isOpen={Boolean(pendingAction)}
+        title={
+          pendingAction === 'resubmit'
+            ? 'Resubmit corrected report?'
+            : 'Submit this report?'
+        }
+        onCancel={() => setPendingAction(null)}
+        onConfirm={() => void confirmSubmitAction()}
+      />
     </section>
   );
 }

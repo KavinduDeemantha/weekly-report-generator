@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useParams } from 'react-router-dom';
 import { getErrorMessage } from '../api/errors';
+import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { ErrorState, PageLoading } from '../components/common/PageState';
 import { Button } from '../components/ui/button';
 import {
@@ -34,6 +35,7 @@ import { reportsKeys } from '../features/reports/query-keys';
 export function ManagerReportDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
+  const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -88,17 +90,12 @@ export function ManagerReportDetailPage() {
   const isMutating = requestChanges.isPending || approve.isPending;
 
   async function handleApprove() {
-    const confirmed = window.confirm('Approve this submitted report?');
-
-    if (!confirmed) {
-      return;
-    }
-
     setActionError(null);
     setSuccessMessage(null);
 
     try {
       await approve.mutateAsync();
+      setIsApproveDialogOpen(false);
     } catch (error) {
       setActionError(getReviewActionMessage(error));
     }
@@ -141,7 +138,11 @@ export function ManagerReportDetailPage() {
               <MessageSquareText className="h-4 w-4" aria-hidden="true" />
               Request changes
             </Button>
-            <Button type="button" disabled={isMutating} onClick={() => void handleApprove()}>
+            <Button
+              type="button"
+              disabled={isMutating}
+              onClick={() => setIsApproveDialogOpen(true)}
+            >
               <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
               Approve
             </Button>
@@ -194,6 +195,16 @@ export function ManagerReportDetailPage() {
           </div>
         </form>
       </Dialog>
+
+      <ConfirmDialog
+        confirmLabel="Approve report"
+        description="This marks the submitted report as approved and closes the current review cycle."
+        isConfirming={approve.isPending}
+        isOpen={isApproveDialogOpen}
+        title="Approve this report?"
+        onCancel={() => setIsApproveDialogOpen(false)}
+        onConfirm={() => void handleApprove()}
+      />
     </section>
   );
 }
