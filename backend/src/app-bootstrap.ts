@@ -7,9 +7,12 @@ function getAllowedOrigins(): string[] {
     .map((origin) => origin.trim())
     .filter((origin) => origin.length > 0);
 
+  if (configuredOrigins && configuredOrigins.length > 0) {
+    return Array.from(new Set(configuredOrigins));
+  }
+
   return Array.from(
     new Set([
-      ...(configuredOrigins ?? []),
       'http://localhost:5173',
       'http://127.0.0.1:5173',
     ]),

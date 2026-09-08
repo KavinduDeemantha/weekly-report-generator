@@ -2,8 +2,12 @@ import axios from 'axios';
 import { normalizeApiError } from './errors';
 import { AUTH_UNAUTHORIZED_EVENT } from '../features/auth/session-events';
 
+const apiBaseUrl =
+  import.meta.env.VITE_API_BASE_URL ??
+  (import.meta.env.DEV ? 'http://localhost:3000' : undefined);
+
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000',
+  baseURL: apiBaseUrl,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',

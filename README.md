@@ -31,18 +31,25 @@ Full-stack technical assignment for weekly team reporting, manager review, and r
 
 ## Backend Setup
 
+Local development:
+
+```bash
 $ cd backend
 $ npm install
-$ npx prisma generate
+$ npm run prisma:generate
 $ npx prisma migrate dev
-$ npx prisma db seed
+$ npm run db:seed
 $ npm run start:dev
+```
 
 Production-style migration command:
 
 ```bash
 cd backend
-npx prisma migrate deploy
+npm run prisma:generate
+npm run prisma:migrate:deploy
+npm run build
+npm run start:prod
 ```
 
 Backend environment variables:
@@ -51,15 +58,22 @@ Backend environment variables:
 DATABASE_URL="postgresql://user:password@localhost:5432/mydb"
 JWT_ACCESS_SECRET="replace-with-a-real-secret"
 JWT_ACCESS_EXPIRES_IN="15m"
+NODE_ENV=production
 PORT=3000
-FRONTEND_URL="http://localhost:5173,http://127.0.0.1:5173"
+FRONTEND_URL="https://your-frontend.example.com"
 ```
+
+`FRONTEND_URL` accepts a comma-separated allowlist. Do not use wildcard CORS with credentialed cookie authentication.
 
 ## Frontend Setup
 
+Local development:
+
+```bash
 $ cd frontend
 $ npm install
 $ npm run dev
+```
 
 Create `frontend/.env` from `frontend/.env.example`:
 
@@ -68,6 +82,16 @@ VITE_API_BASE_URL=http://localhost:3000
 ```
 
 `VITE_*` values are public browser configuration. Do not put secrets in frontend environment files.
+
+Production build:
+
+```bash
+cd frontend
+npm run build
+npm run preview
+```
+
+Set `VITE_API_BASE_URL` to the deployed backend origin, unless the frontend host proxies API requests to the same origin.
 
 ## Backend Authentication
 
@@ -201,6 +225,17 @@ npm run test
 - Production cookies use `secure: true`; local development uses non-secure cookies for `localhost`
 
 Deployment note: current cookie settings use `sameSite: "lax"`, which works well for same-site or same-registrable-domain deployments. If frontend and backend are deployed truly cross-site, cookie settings may need an explicit `sameSite: "none"` plus secure HTTPS.
+
+## Demo Reset
+
+To restore deterministic local demo data, reset the local database:
+
+```bash
+cd backend
+npx prisma migrate reset
+```
+
+This is destructive and should only be used against a local/demo database. Never run `prisma migrate reset` against production. The current Prisma config includes the seed command, so `migrate reset` prompts and then runs the seed automatically.
 
 ## Future Improvements
 

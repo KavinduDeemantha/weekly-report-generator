@@ -43,6 +43,31 @@ describe('dashboard components', () => {
     expect(screen.getByText('Open Blockers')).toBeInTheDocument();
   });
 
+  it('shows accessible help content for dashboard metrics', async () => {
+    renderWithProviders(
+      <SummaryCards
+        isLoading={false}
+        data={{
+          totalReportsSubmitted: 3,
+          submissionComplianceRate: 75,
+          pendingCount: 1,
+          needsCorrectionCount: 1,
+          openBlockersCount: 2,
+        }}
+      />,
+    );
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'About Pending' }),
+    );
+
+    expect(
+      screen.getByText(
+        'Active team members with a Draft report or no report for the selected week.',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('renders an empty state for a chart section with no data', () => {
     renderWithProviders(
       <DashboardSection title="Task Trends" isEmpty>
@@ -75,7 +100,141 @@ describe('dashboard components', () => {
     expect(screen.getByText('Sunil Silva · Client Portal')).toBeInTheDocument();
   });
 
+  it('defaults to single week mode and shows only the week input', () => {
+    renderWithProviders(
+      <DashboardFilters filters={{}} onChange={vi.fn()} />,
+      createDashboardFilterQueryClient(),
+    );
+
+    expect(
+      screen.getByRole('button', { name: 'Single week' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByLabelText('Selected week')).toBeInTheDocument();
+    expect(screen.queryByLabelText('From')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('To')).not.toBeInTheDocument();
+  });
+
+  it('shows only from and to inputs in date range mode', async () => {
+    renderWithProviders(
+      <DashboardFilters filters={{}} onChange={vi.fn()} />,
+      createDashboardFilterQueryClient(),
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Date range' }));
+
+    expect(
+      screen.getByRole('button', { name: 'Date range' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByLabelText('Selected week')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('From')).toBeInTheDocument();
+    expect(screen.getByLabelText('To')).toBeInTheDocument();
+  });
+
+  it('applies single week filters without stale date range values', async () => {
+    const onChange = vi.fn();
+
+    renderWithProviders(
+      <DashboardFilters
+        filters={{
+          from: '2026-09-01',
+          to: '2026-09-30',
+        }}
+        onChange={onChange}
+      />,
+      createDashboardFilterQueryClient(),
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Single week' }));
+    await userEvent.type(screen.getByLabelText('Selected week'), '2026-09-07');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
+
+    expect(onChange).toHaveBeenCalledWith({ weekStart: '2026-09-07' });
+  });
+
+  it('applies date range filters without stale selected week values', async () => {
+    const onChange = vi.fn();
+
+    renderWithProviders(
+      <DashboardFilters
+        filters={{
+          weekStart: '2026-09-07',
+        }}
+        onChange={onChange}
+      />,
+      createDashboardFilterQueryClient(),
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Date range' }));
+    await userEvent.type(screen.getByLabelText('From'), '2026-09-01');
+    await userEvent.type(screen.getByLabelText('To'), '2026-09-30');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
+
+    expect(onChange).toHaveBeenCalledWith({
+      from: '2026-09-01',
+      to: '2026-09-30',
+    });
+  });
+
+  it('rejects an invalid date range before applying filters', async () => {
+    const onChange = vi.fn();
+
+    renderWithProviders(
+      <DashboardFilters filters={{}} onChange={onChange} />,
+      createDashboardFilterQueryClient(),
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Date range' }));
+    await userEvent.type(screen.getByLabelText('From'), '2026-09-30');
+    await userEvent.type(screen.getByLabelText('To'), '2026-09-01');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
+
+    expect(
+      screen.getByText('From date must be on or before To date.'),
+    ).toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('clears filters and resets back to single week mode', async () => {
+    const onChange = vi.fn();
+
+    renderWithProviders(
+      <DashboardFilters filters={{}} onChange={onChange} />,
+      createDashboardFilterQueryClient(),
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Date range' }));
+    await userEvent.type(screen.getByLabelText('From'), '2026-09-30');
+    await userEvent.type(screen.getByLabelText('To'), '2026-09-01');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
+
+    expect(
+      screen.getByRole('button', { name: 'Single week' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByLabelText('Selected week')).toHaveValue('');
+    expect(
+      screen.queryByText('From date must be on or before To date.'),
+    ).not.toBeInTheDocument();
+    expect(onChange).toHaveBeenLastCalledWith({});
+  });
+
   it('applies selected filters only when requested', async () => {
+    const onChange = vi.fn();
+
+    renderWithProviders(
+      <DashboardFilters filters={{}} onChange={onChange} />,
+      createDashboardFilterQueryClient(),
+    );
+
+    await userEvent.type(screen.getByLabelText('Selected week'), '2026-09-07');
+    expect(onChange).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
+    expect(onChange).toHaveBeenCalledWith({ weekStart: '2026-09-07' });
+  });
+});
+
+function createDashboardFilterQueryClient() {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false, staleTime: Infinity } },
     });
@@ -103,17 +262,6 @@ describe('dashboard components', () => {
       ],
       meta: { page: 1, limit: 100, total: 1, totalPages: 1 },
     });
-    const onChange = vi.fn();
 
-    renderWithProviders(
-      <DashboardFilters filters={{}} onChange={onChange} />,
-      queryClient,
-    );
-
-    await userEvent.type(screen.getByLabelText('Selected week'), '2026-09-07');
-    expect(onChange).not.toHaveBeenCalled();
-
-    await userEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
-    expect(onChange).toHaveBeenCalledWith({ weekStart: '2026-09-07' });
-  });
-});
+  return queryClient;
+}
