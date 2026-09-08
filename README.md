@@ -9,6 +9,20 @@ $ npx prisma migrate dev
 $ npx prisma db seed
 $ npm run start:dev
 
+## Frontend Setup
+
+$ cd frontend
+$ npm install
+$ npm run dev
+
+Create `frontend/.env` from `frontend/.env.example`:
+
+```env
+VITE_API_BASE_URL=http://localhost:3000
+```
+
+`VITE_*` values are public browser configuration. Do not put secrets in frontend environment files.
+
 ## Backend Authentication
 
 Authentication uses bcrypt password hashes and signed JWT access tokens stored in an HTTP-only `access_token` cookie. Public registration always creates `TEAM_MEMBER` users; manager users come from seed data.
@@ -25,6 +39,23 @@ Seed demo credentials:
 
 - Manager: `kavindu@gmail.com` / `Password123!`
 - Team members: `sunil@gmail.com`, `nimal@gmail.com`, `kamal@gmail.com`, `amal@gmail.com` / `Password123!`
+
+## Frontend Authentication
+
+The React frontend uses a centralized Axios client with `withCredentials: true`, so the browser sends the backend HTTP-only `access_token` cookie automatically. The JWT is never stored in `localStorage` or `sessionStorage`.
+
+TanStack Query is the source of truth for the current session. On startup, the app calls `GET /auth/me`; a `401` is treated as an expected unauthenticated state.
+
+Frontend routes:
+
+- `/login` public-only sign in page
+- `/register` public-only team-member registration page
+- `/reports` authenticated `TEAM_MEMBER` shell
+- `/reports/new` authenticated `TEAM_MEMBER` shell
+- `/manager/dashboard` authenticated `MANAGER` shell
+- `/` redirects by role: manager to `/manager/dashboard`, team member to `/reports`, unauthenticated user to `/login`
+
+Frontend route guards are for user experience only. Backend authorization remains the security boundary.
 
 ## Projects
 
