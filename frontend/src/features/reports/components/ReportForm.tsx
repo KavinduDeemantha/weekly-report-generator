@@ -1,5 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Plus, Trash2 } from 'lucide-react';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { Loader2, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { ErrorState, PageLoading } from '../../../components/common/PageState';
 import { Button } from '../../../components/ui/button';
@@ -10,11 +12,21 @@ import {
   CardHeader,
   CardTitle,
 } from '../../../components/ui/card';
+import { Dialog } from '../../../components/ui/dialog';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
-import { projectsApi } from '../../projects/api';
-import { useQuery } from '@tanstack/react-query';
 import { getErrorMessage } from '../../../api/errors';
+import { aiApi } from '../../ai/api';
+import {
+  buildReportAssistantContext,
+  getReportValuesAfterAssistantSuggestion,
+  reportAssistantActionLabels,
+} from '../../ai/report-assistant';
+import type {
+  ReportAssistantAction,
+  ReportAssistantResponse,
+} from '../../ai/types';
+import { projectsApi } from '../../projects/api';
 import { defaultReportValues } from '../adapters';
 import {
   reportFormSchema,
@@ -39,6 +51,11 @@ export function ReportForm({
   error,
   onSubmit,
 }: ReportFormProps) {
+  const [assistantAction, setAssistantAction] =
+    useState<ReportAssistantAction | null>(null);
+  const [assistantResponse, setAssistantResponse] =
+    useState<ReportAssistantResponse | null>(null);
+
   const projectsQuery = useQuery({
     queryKey: ['projects', 'active'],
     queryFn: projectsApi.listActive,
@@ -64,6 +81,92 @@ export function ReportForm({
     name: 'timeEntries',
   });
 
+  const watchedNotes = form.watch('notes');
+  const watchedTasks = form.watch('tasks');
+  const watchedBlockers = form.watch('blockers');
+  const watchedAchievements = form.watch('achievements');
+
+  const assistantMutation = useMutation({
+    mutationFn: aiApi.getReportSuggestion,
+    onSuccess: (response) => {
+      setAssistantResponse(response);
+    },
+  });
+
+  const isAssistantBusy = assistantMutation.isPending;
+
+  function requestAssistantSuggestion(action: ReportAssistantAction) {
+    const values = form.getValues();
+
+    setAssistantAction(action);
+    setAssistantResponse(null);
+    assistantMutation.reset();
+    assistantMutation.mutate({
+      action,
+      context: buildReportAssistantContext(values, action),
+    });
+  }
+
+  function closeAssistantDialog() {
+    if (isAssistantBusy) {
+      return;
+    }
+
+    setAssistantAction(null);
+    setAssistantResponse(null);
+    assistantMutation.reset();
+  }
+
+  function applyAssistantSuggestion(response: ReportAssistantResponse) {
+    const nextValues = getReportValuesAfterAssistantSuggestion(
+      form.getValues(),
+      response,
+    );
+
+    switch (response.action) {
+      case 'IMPROVE_WRITING':
+      case 'SUMMARIZE_WEEK':
+        form.setValue('notes', nextValues.notes, {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
+        break;
+      case 'IMPROVE_BLOCKERS':
+        blockers.replace(nextValues.blockers);
+        form.setValue('blockers', nextValues.blockers, {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
+        break;
+      case 'IMPROVE_ACHIEVEMENTS':
+        achievements.replace(nextValues.achievements);
+        form.setValue('achievements', nextValues.achievements, {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
+        break;
+      case 'SUGGEST_NEXT_WEEK':
+        nextWeekTasks.replace(nextValues.nextWeekTasks);
+        form.setValue('nextWeekTasks', nextValues.nextWeekTasks, {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
+        break;
+    }
+
+    closeAssistantDialog();
+  }
+
+  const hasReportText =
+    Boolean(watchedNotes?.trim()) ||
+    watchedTasks.some((task) => task.name.trim() || task.deliverable?.trim());
+  const hasBlockerText = watchedBlockers.some((blocker) =>
+    blocker.description.trim(),
+  );
+  const hasAchievementText = watchedAchievements.some((achievement) =>
+    achievement.description.trim(),
+  );
+
   if (projectsQuery.isLoading) {
     return <PageLoading label="Loading projects" />;
   }
@@ -83,8 +186,26 @@ export function ReportForm({
 
       <Card>
         <CardHeader>
-          <CardTitle>Report details</CardTitle>
-          <CardDescription>Week, project, and optional notes.</CardDescription>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <CardTitle>Report details</CardTitle>
+              <CardDescription>Week, project, and optional notes.</CardDescription>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <AiActionButton
+                action="IMPROVE_WRITING"
+                disabled={!hasReportText}
+                isBusy={isAssistantBusy}
+                onClick={requestAssistantSuggestion}
+              />
+              <AiActionButton
+                action="SUMMARIZE_WEEK"
+                disabled={!hasReportText}
+                isBusy={isAssistantBusy}
+                onClick={requestAssistantSuggestion}
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <FormField
@@ -277,6 +398,14 @@ export function ReportForm({
 
       <RepeatableTextSection
         addLabel="Add plan"
+        extraAction={
+          <AiActionButton
+            action="SUGGEST_NEXT_WEEK"
+            disabled={!hasReportText}
+            isBusy={isAssistantBusy}
+            onClick={requestAssistantSuggestion}
+          />
+        }
         description="Planned tasks for the next reporting week."
         getError={(index) =>
           form.formState.errors.nextWeekTasks?.[index]?.description?.message
@@ -297,20 +426,28 @@ export function ReportForm({
               <CardTitle>Blockers</CardTitle>
               <CardDescription>Mark at most one key issue.</CardDescription>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() =>
-                blockers.append({
-                  description: '',
-                  isKeyIssue: false,
-                  isResolved: false,
-                })
-              }
-            >
-              <Plus className="h-4 w-4" aria-hidden="true" />
-              Add blocker
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <AiActionButton
+                action="IMPROVE_BLOCKERS"
+                disabled={!hasBlockerText}
+                isBusy={isAssistantBusy}
+                onClick={requestAssistantSuggestion}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  blockers.append({
+                    description: '',
+                    isKeyIssue: false,
+                    isResolved: false,
+                  })
+                }
+              >
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                Add blocker
+              </Button>
+            </div>
           </div>
           {typeof form.formState.errors.blockers?.message === 'string' ? (
             <p className="text-sm text-red-600">
@@ -356,19 +493,27 @@ export function ReportForm({
               <CardTitle>Achievements</CardTitle>
               <CardDescription>Mark at most one key achievement.</CardDescription>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() =>
-                achievements.append({
-                  description: '',
-                  isKeyAchievement: false,
-                })
-              }
-            >
-              <Plus className="h-4 w-4" aria-hidden="true" />
-              Add achievement
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <AiActionButton
+                action="IMPROVE_ACHIEVEMENTS"
+                disabled={!hasAchievementText}
+                isBusy={isAssistantBusy}
+                onClick={requestAssistantSuggestion}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  achievements.append({
+                    description: '',
+                    isKeyAchievement: false,
+                  })
+                }
+              >
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                Add achievement
+              </Button>
+            </div>
           </div>
           {typeof form.formState.errors.achievements?.message === 'string' ? (
             <p className="text-sm text-red-600">
@@ -464,6 +609,24 @@ export function ReportForm({
         </CardContent>
       </Card>
 
+      <AiSuggestionDialog
+        action={assistantAction}
+        error={
+          assistantMutation.isError
+            ? getErrorMessage(assistantMutation.error)
+            : null
+        }
+        isLoading={isAssistantBusy}
+        onApply={applyAssistantSuggestion}
+        onClose={closeAssistantDialog}
+        onRetry={() => {
+          if (assistantAction) {
+            requestAssistantSuggestion(assistantAction);
+          }
+        }}
+        response={assistantResponse}
+      />
+
       <div className="sticky bottom-0 flex justify-end border-t border-border bg-slate-50 py-4">
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? (
@@ -473,6 +636,108 @@ export function ReportForm({
         </Button>
       </div>
     </form>
+  );
+}
+
+function AiActionButton({
+  action,
+  disabled,
+  isBusy,
+  onClick,
+}: {
+  action: ReportAssistantAction;
+  disabled: boolean;
+  isBusy: boolean;
+  onClick: (action: ReportAssistantAction) => void;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      disabled={disabled || isBusy}
+      onClick={() => onClick(action)}
+    >
+      <Sparkles className="h-4 w-4" aria-hidden="true" />
+      {reportAssistantActionLabels[action]}
+    </Button>
+  );
+}
+
+function AiSuggestionDialog({
+  action,
+  error,
+  isLoading,
+  onApply,
+  onClose,
+  onRetry,
+  response,
+}: {
+  action: ReportAssistantAction | null;
+  error: string | null;
+  isLoading: boolean;
+  onApply: (response: ReportAssistantResponse) => void;
+  onClose: () => void;
+  onRetry: () => void;
+  response: ReportAssistantResponse | null;
+}) {
+  const title = action
+    ? `AI suggestion: ${reportAssistantActionLabels[action]}`
+    : 'AI suggestion';
+
+  return (
+    <Dialog
+      description="AI suggestions may be inaccurate. Review before applying."
+      isOpen={Boolean(action)}
+      onClose={onClose}
+      title={title}
+    >
+      <div className="space-y-4" aria-live="polite">
+        {isLoading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            Generating suggestion...
+          </div>
+        ) : null}
+
+        {error ? (
+          <ErrorState message={error} onRetry={onRetry} />
+        ) : null}
+
+        {response ? (
+          <>
+            <div className="rounded-md border border-border bg-slate-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                AI suggestion
+              </p>
+              {response.suggestions?.length ? (
+                <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-foreground">
+                  {response.suggestions.map((suggestion) => (
+                    <li key={suggestion}>{suggestion}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-3 whitespace-pre-wrap text-sm text-foreground">
+                  {response.suggestion}
+                </p>
+              )}
+              {response.suggestions?.length ? (
+                <p className="mt-4 text-sm text-muted-foreground">
+                  {response.suggestion}
+                </p>
+              ) : null}
+            </div>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="button" onClick={() => onApply(response)}>
+                Apply suggestion
+              </Button>
+            </div>
+          </>
+        ) : null}
+      </div>
+    </Dialog>
   );
 }
 
@@ -500,6 +765,7 @@ type RepeatableTextSectionProps = {
   addLabel: string;
   append: () => void;
   description: string;
+  extraAction?: React.ReactNode;
   fields: { id: string }[];
   getError: (index: number) => string | undefined;
   label: string;
@@ -513,6 +779,7 @@ function RepeatableTextSection({
   addLabel,
   append,
   description,
+  extraAction,
   fields,
   getError,
   label,
@@ -529,10 +796,13 @@ function RepeatableTextSection({
             <CardTitle>{title}</CardTitle>
             <CardDescription>{description}</CardDescription>
           </div>
-          <Button type="button" variant="outline" onClick={append}>
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            {addLabel}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {extraAction}
+            <Button type="button" variant="outline" onClick={append}>
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              {addLabel}
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">

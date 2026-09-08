@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
+import { AiModule } from './ai/ai.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
 import { HealthModule } from './health/health.module.js';
@@ -22,6 +23,7 @@ import { UsersModule } from './users/users.module.js';
     ReportsModule,
     ManagerReportsModule,
     DashboardModule,
+    AiModule,
     HealthModule,
   ],
 })

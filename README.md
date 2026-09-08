@@ -11,6 +11,7 @@ Full-stack technical assignment for weekly team reporting, manager review, and r
 - Project management with soft deactivation
 - Read-only manager user list
 - Manager dashboard analytics with filters, charts, summary metrics, and activity feed
+- Optional Gemini-powered report assistant for member report drafting
 
 ## Tech Stack
 
@@ -61,9 +62,12 @@ JWT_ACCESS_EXPIRES_IN="15m"
 NODE_ENV=production
 PORT=3000
 FRONTEND_URL="https://your-frontend.example.com"
+GEMINI_API_KEY=""
+GEMINI_MODEL="gemini-3.7-flash"
 ```
 
 `FRONTEND_URL` accepts a comma-separated allowlist. Do not use wildcard CORS with credentialed cookie authentication.
+`GEMINI_API_KEY` is optional unless the AI assistant endpoint is used, and it must stay backend-only. Never create a `VITE_GEMINI_API_KEY`.
 
 ## Frontend Setup
 
@@ -153,6 +157,8 @@ Lifecycle behavior in the UI:
 
 Submit and resubmit actions ask for confirmation because submitted content becomes read-only until a manager action. Version history pages are always read-only and display immutable historical report content plus reviews linked to each version.
 
+The optional AI assistant is available inside the create/edit report form. It can improve writing, summarize the week, improve blocker wording, improve achievement wording, and suggest next-week tasks. AI suggestions are shown for review first; they are never saved, submitted, or applied to the form until the user chooses Apply.
+
 ## Frontend Manager Operations
 
 The manager reports page consumes `GET /manager/reports` with pagination plus status, team-member, project, and date-range filters. List rows show summary data only; full report content is loaded on the review page.
@@ -192,8 +198,6 @@ Dashboard values are backend-defined. The frontend does not recompute compliance
 
 Route-level lazy loading is enabled for major frontend pages, including the manager dashboard and report pages.
 
-AI is not implemented yet.
-
 ## Testing
 
 Backend:
@@ -223,6 +227,7 @@ npm run test
 - Report ownership, status, current version, reviewer id, and user id are never trusted from client payloads
 - Password hashes and JWTs are not returned by API responses
 - Production cookies use `secure: true`; local development uses non-secure cookies for `localhost`
+- Gemini API calls happen only from the backend; report text is sent only for the selected assistant action and is not persisted by this application
 
 Deployment note: current cookie settings use `sameSite: "lax"`, which works well for same-site or same-registrable-domain deployments. If frontend and backend are deployed truly cross-site, cookie settings may need an explicit `sameSite: "none"` plus secure HTTPS.
 
@@ -239,7 +244,6 @@ This is destructive and should only be used against a local/demo database. Never
 
 ## Future Improvements
 
-- AI-assisted report drafting and summarization
 - Manager dashboard drilldowns and exports
 - Admin-managed invitations and role changes
 - Route-level prefetching for frequently used pages
@@ -304,6 +308,32 @@ Request changes body:
 ```
 
 `Report` stores ownership, project, week range, status, and the current version number. `ReportVersion` stores the versioned weekly content: notes, tasks, next-week tasks, blockers, achievements, time entries, and reviews tied to that exact version.
+
+## AI Report Assistant API
+
+The report assistant route requires an authenticated `TEAM_MEMBER` and uses Gemini from the NestJS backend:
+
+- `POST /ai/report-assistant`
+
+Supported actions:
+
+- `IMPROVE_WRITING`
+- `SUMMARIZE_WEEK`
+- `IMPROVE_BLOCKERS`
+- `IMPROVE_ACHIEVEMENTS`
+- `SUGGEST_NEXT_WEEK`
+
+The client sends only the action and current report context. It cannot send a prompt, model name, user id, role, report status, or version number. The backend owns the safety prompt and returns a structured suggestion:
+
+```json
+{
+  "action": "IMPROVE_BLOCKERS",
+  "suggestion": "Clarified blocker wording.",
+  "suggestions": ["Production credentials are still pending."]
+}
+```
+
+AI output is advisory and may be inaccurate. Users must review and explicitly apply suggestions in the form, then save or submit through the normal report workflow. Provider rate limits may apply based on the configured Gemini account.
 
 ## Manager Dashboard API
 
