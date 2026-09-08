@@ -1,45 +1,34 @@
-import { useQuery } from '@tanstack/react-query';
-import { Activity, AlertTriangle, CheckCircle2, Clock, FileText } from 'lucide-react';
-import { ErrorState, PageLoading } from '../components/common/PageState';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { useState } from 'react';
 import { getErrorMessage } from '../api/errors';
-import { dashboardApi } from '../features/dashboard/api';
-import { dashboardKeys } from '../features/dashboard/query-keys';
-
-const metricCards = [
-  {
-    key: 'totalReportsSubmitted',
-    label: 'Submitted',
-    icon: FileText,
-  },
-  {
-    key: 'submissionComplianceRate',
-    label: 'Compliance',
-    icon: CheckCircle2,
-    suffix: '%',
-  },
-  {
-    key: 'pendingCount',
-    label: 'Pending',
-    icon: Clock,
-  },
-  {
-    key: 'needsCorrectionCount',
-    label: 'Needs correction',
-    icon: AlertTriangle,
-  },
-  {
-    key: 'openBlockersCount',
-    label: 'Open blockers',
-    icon: Activity,
-  },
-] as const;
+import { ErrorState } from '../components/common/PageState';
+import { ActivityFeed } from '../features/dashboard/components/ActivityFeed';
+import { DashboardFilters } from '../features/dashboard/components/DashboardFilters';
+import { DashboardSection } from '../features/dashboard/components/DashboardSection';
+import { ProjectDistributionChart } from '../features/dashboard/components/ProjectDistributionChart';
+import { SubmissionStatusChart } from '../features/dashboard/components/SubmissionStatusChart';
+import { SummaryCards } from '../features/dashboard/components/SummaryCards';
+import { TaskTrendsChart } from '../features/dashboard/components/TaskTrendsChart';
+import { TimeDistributionChart } from '../features/dashboard/components/TimeDistributionChart';
+import {
+  useDashboardActivity,
+  useDashboardSummary,
+  useProjectDistribution,
+  useSubmissionStatus,
+  useTaskTrends,
+  useTimeDistribution,
+} from '../features/dashboard/hooks';
+import type { DashboardFilters as DashboardFiltersState } from '../features/dashboard/types';
 
 export function ManagerDashboardPage() {
-  const summaryQuery = useQuery({
-    queryKey: dashboardKeys.summary(),
-    queryFn: dashboardApi.getSummary,
+  const [filters, setFilters] = useState<DashboardFiltersState>({
+    limit: 20,
   });
+  const summary = useDashboardSummary(filters);
+  const submissionStatus = useSubmissionStatus(filters);
+  const taskTrends = useTaskTrends(filters);
+  const projectDistribution = useProjectDistribution(filters);
+  const timeDistribution = useTimeDistribution(filters);
+  const activity = useDashboardActivity(filters);
 
   return (
     <section className="space-y-6">
@@ -48,66 +37,68 @@ export function ManagerDashboardPage() {
           Manager Dashboard
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Current reporting health and team activity overview.
+          Backend analytics for reporting compliance, workload, blockers, and recent review activity.
         </p>
       </div>
 
-      {summaryQuery.isLoading ? (
-        <PageLoading label="Loading dashboard" />
+      <DashboardFilters filters={filters} onChange={setFilters} />
+
+      {summary.isError ? (
+        <ErrorState message={getErrorMessage(summary.error)} />
       ) : null}
+      <SummaryCards data={summary.data} isLoading={summary.isLoading} />
 
-      {summaryQuery.isError ? (
-        <ErrorState
-          message={getErrorMessage(summaryQuery.error)}
-          onRetry={() => void summaryQuery.refetch()}
-        />
-      ) : null}
+      <div className="grid gap-6 xl:grid-cols-2">
+        <DashboardSection
+          description="Completed tasks by report week, using current report versions only."
+          error={taskTrends.error}
+          isEmpty={(taskTrends.data ?? []).length === 0}
+          isLoading={taskTrends.isLoading}
+          title="Task Trends"
+        >
+          <TaskTrendsChart data={taskTrends.data ?? []} />
+        </DashboardSection>
 
-      {summaryQuery.data ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-          {metricCards.map((metric) => {
-            const Icon = metric.icon;
-            const value = summaryQuery.data[metric.key];
+        <DashboardSection
+          description="Current submission state for each active team member."
+          error={submissionStatus.error}
+          isEmpty={(submissionStatus.data ?? []).length === 0}
+          isLoading={submissionStatus.isLoading}
+          title="Submission Status"
+        >
+          <SubmissionStatusChart data={submissionStatus.data ?? []} />
+        </DashboardSection>
 
-            return (
-              <Card key={metric.key}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center justify-between text-sm font-medium text-muted-foreground">
-                    {metric.label}
-                    <Icon className="h-4 w-4" aria-hidden="true" />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-semibold">
-                    {value}
-                    {'suffix' in metric ? metric.suffix : ''}
-                  </p>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      ) : null}
+        <DashboardSection
+          description="Current-version task count by project."
+          error={projectDistribution.error}
+          isEmpty={(projectDistribution.data ?? []).length === 0}
+          isLoading={projectDistribution.isLoading}
+          title="Project Distribution"
+        >
+          <ProjectDistributionChart data={projectDistribution.data ?? []} />
+        </DashboardSection>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Submission status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-36 rounded-md border border-dashed border-border bg-slate-50" />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Task and time trends</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-36 rounded-md border border-dashed border-border bg-slate-50" />
-          </CardContent>
-        </Card>
+        <DashboardSection
+          description="Time entries grouped by work type."
+          error={timeDistribution.error}
+          isEmpty={(timeDistribution.data ?? []).length === 0}
+          isLoading={timeDistribution.isLoading}
+          title="Time Distribution"
+        >
+          <TimeDistributionChart data={timeDistribution.data ?? []} />
+        </DashboardSection>
       </div>
+
+      <DashboardSection
+        description="Recent submissions, resubmissions, requested changes, and approvals."
+        error={activity.error}
+        isEmpty={(activity.data ?? []).length === 0}
+        isLoading={activity.isLoading}
+        title="Recent Activity"
+      >
+        <ActivityFeed data={activity.data ?? []} />
+      </DashboardSection>
     </section>
   );
 }

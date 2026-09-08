@@ -96,7 +96,33 @@ After review actions, the frontend invalidates manager report detail/list querie
 
 Project management consumes the existing `/projects` API. Managers can create, edit, and soft-deactivate projects; duplicate-name and validation errors are displayed through the shared API error handling. User management is read-only because the backend currently exposes only `GET /users`.
 
-Dashboard charts are not implemented yet.
+## Frontend Manager Dashboard
+
+The manager dashboard consumes the backend analytics APIs directly:
+
+- `GET /dashboard/summary`
+- `GET /dashboard/submission-status`
+- `GET /dashboard/task-trends`
+- `GET /dashboard/project-distribution`
+- `GET /dashboard/time-distribution`
+- `GET /dashboard/activity`
+
+Dashboard filters are shared across widgets and support selected week, date range, team member, and project. Filters are applied explicitly from the filter bar so widgets do not refetch on every field edit.
+
+Dashboard widgets:
+
+- Summary cards for submitted reports, compliance rate, pending reports, needs-correction reports, and open blockers
+- Line chart for completed-task trends by week
+- Submission-status visualization with per-member status labels, including `NOT_STARTED`
+- Bar chart for task distribution by project
+- Bar chart for time distribution by work type
+- Recent activity feed for submissions, resubmissions, requested changes, and approvals
+
+Dashboard values are backend-defined. The frontend does not recompute compliance or content analytics differently, and dashboard content metrics rely on the backend rule that only current report versions are counted.
+
+Route-level lazy loading is enabled for major frontend pages, including the manager dashboard and report pages.
+
+AI is not implemented yet.
 
 ## Projects
 

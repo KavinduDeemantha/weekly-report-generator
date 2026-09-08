@@ -61,9 +61,9 @@ describe('route guards', () => {
     expect(await screen.findByText('Login page')).toBeInTheDocument();
   });
 
-  it('blocks team members from manager routes', async () => {
+  it('blocks team members from manager dashboard routes', async () => {
     renderWithAuth({
-      initialPath: '/manager/reports',
+      initialPath: '/manager/dashboard',
       user: {
         id: 'member-1',
         name: 'Team Member',
