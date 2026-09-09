@@ -20,21 +20,7 @@ Full-stack technical assignment for weekly team reporting, manager review, and r
 - Backend: NestJS, TypeScript, PostgreSQL, Prisma 7, `@prisma/adapter-pg`, Vitest, Supertest
 - Frontend: React, TypeScript, Vite, React Router, TanStack Query, React Hook Form, Zod, Tailwind CSS, Recharts
 
-## Project Structure
-
-```text
-/
-├── backend/
-│   ├── prisma/
-│   ├── src/
-│   └── test/
-└── frontend/
-    └── src/
-```
-
-## Backend Setup
-
-Local development:
+## Local development:
 
 ```bash
 $ cd backend
@@ -45,7 +31,7 @@ $ npm run db:seed
 $ npm run start:dev
 ```
 
-Production-style migration command:
+## Production-style migration command:
 
 ```bash
 cd backend
@@ -55,7 +41,7 @@ npm run build
 npm run start:prod
 ```
 
-Backend environment variables:
+## Backend environment variables:
 
 ```env
 DATABASE_URL="postgresql://user:password@localhost:5432/mydb"
@@ -64,12 +50,9 @@ JWT_ACCESS_EXPIRES_IN="8h"
 NODE_ENV=production
 PORT=3000
 FRONTEND_URL="https://your-frontend.example.com"
-GEMINI_API_KEY=""
+GEMINI_API_KEY="replace-with-a-real-gemini-api-key"
 GEMINI_MODEL="gemini-3.7-flash"
 ```
-
-`FRONTEND_URL` accepts a comma-separated allowlist. Do not use wildcard CORS with credentialed cookie authentication.
-`GEMINI_API_KEY` is optional unless the AI assistant endpoint is used, and it must stay backend-only. Never create a `VITE_GEMINI_API_KEY`.
 
 ## Frontend Setup
 
@@ -89,7 +72,7 @@ VITE_API_BASE_URL=http://localhost:3000
 
 `VITE_*` values are public browser configuration. Do not put secrets in frontend environment files.
 
-Production build:
+## Production build:
 
 ```bash
 cd frontend
@@ -103,42 +86,16 @@ Set `VITE_API_BASE_URL` to the deployed backend origin, unless the frontend host
 
 Authentication uses bcrypt password hashes and signed JWT access tokens stored in an HTTP-only `access_token` cookie. Public registration always creates `TEAM_MEMBER` users; manager users come from seed data.
 
-Endpoints:
-
-- `POST /auth/register`
-- `POST /auth/login`
-- `POST /auth/logout`
-- `GET /auth/me`
-- `GET /users` requires `MANAGER`
-
-Seed demo credentials:
+## Seed demo credentials:
 
 - Manager: `kavindu@gmail.com` / `Password123!`
-- Team members: `sunil@gmail.com`, `nimal@gmail.com`, `kamal@gmail.com`, `amal@gmail.com` / `Password123!`
+- Team members: `sunil@gmail.com`, `nimal@gmail.com`, `kamal@gmail.com`, `amal@gmail.com`, `priya@gmail.com` / `Password123!`
 
 ## Frontend Authentication
 
 The React frontend uses a centralized Axios client with `withCredentials: true`, so the browser sends the backend HTTP-only `access_token` cookie automatically. The JWT is never stored in `localStorage` or `sessionStorage`.
 
 TanStack Query is the source of truth for the current session. On startup, the app calls `GET /auth/me`; a `401` is treated as an expected unauthenticated state.
-
-Frontend routes:
-
-- `/login` public-only sign in page
-- `/register` public-only team-member registration page
-- `/reports` authenticated `TEAM_MEMBER` report history
-- `/reports/new` authenticated `TEAM_MEMBER` create-report form
-- `/reports/:id` authenticated `TEAM_MEMBER` report detail
-- `/reports/:id/edit` authenticated `TEAM_MEMBER` draft/correction edit form
-- `/reports/:id/versions` authenticated `TEAM_MEMBER` version history
-- `/reports/:id/versions/:versionNumber` authenticated `TEAM_MEMBER` read-only version detail
-- `/manager/dashboard` authenticated `MANAGER` dashboard
-- `/manager/reports` authenticated `MANAGER` team reports table
-- `/manager/reports/:id` authenticated `MANAGER` report review page
-- `/manager/reports/:id/versions/:versionNumber` authenticated `MANAGER` read-only version detail
-- `/manager/projects` authenticated `MANAGER` project management
-- `/manager/users` authenticated `MANAGER` read-only users list
-- `/` redirects by role: manager to `/manager/dashboard`, team member to `/reports`, unauthenticated user to `/login`
 
 Frontend route guards are for user experience only. Backend authorization remains the security boundary.
 
@@ -175,15 +132,6 @@ After review actions, the frontend invalidates manager report detail/list querie
 Project management consumes the `/projects` API. Managers can create, edit, soft-deactivate projects, and manage assigned team members. Duplicate-name and validation errors are displayed through the shared API error handling. User management is read-only because the backend currently exposes only `GET /users`.
 
 ## Frontend Manager Dashboard
-
-The manager dashboard consumes the backend analytics APIs directly:
-
-- `GET /dashboard/summary`
-- `GET /dashboard/submission-status`
-- `GET /dashboard/task-trends`
-- `GET /dashboard/project-distribution`
-- `GET /dashboard/time-distribution`
-- `GET /dashboard/activity`
 
 Dashboard filters are shared across widgets and support selected week, date range, team member, and project. Filters are applied explicitly from the filter bar so widgets do not refetch on every field edit.
 
@@ -260,31 +208,6 @@ This is destructive and should only be used against a local/demo database. Never
 
 Project routes require authentication. Team members can list active projects assigned to them. Managers can list all projects, manage project records, and manage team-member assignments.
 
-- `GET /projects?page=1&limit=20`
-- `GET /projects?isActive=false` for managers
-- `POST /projects` requires `MANAGER`
-- `PATCH /projects/:id` requires `MANAGER`
-- `DELETE /projects/:id` requires `MANAGER` and soft-deactivates the project
-- `GET /projects/:id/members` requires `MANAGER`
-- `PUT /projects/:id/members` requires `MANAGER` and replaces the assigned team-member set
-
-Example:
-
-```json
-{
-  "name": "Client Portal",
-  "description": "Customer-facing web portal"
-}
-```
-
-Project member assignment body:
-
-```json
-{
-  "userIds": ["00000000-0000-0000-0000-000000000000"]
-}
-```
-
 Only active `TEAM_MEMBER` users can be assigned as project members. Team members can create or move reports only for active projects assigned to them; existing reports remain readable through the normal ownership and manager-review rules.
 
 ## Reports
@@ -295,36 +218,11 @@ Current report lifecycle:
 
 Supported transitions are enforced by the backend. Clients cannot set `userId`, `status`, `currentVersion`, or `reviewerId` through request bodies.
 
-Team-member report routes:
-
-- `POST /reports`
-- `GET /reports/me?page=1&limit=10&status=DRAFT&projectId=<projectId>&from=2026-09-01&to=2026-09-30`
-- `GET /reports/:id`
-- `PATCH /reports/:id`
-- `POST /reports/:id/submit`
-- `POST /reports/:id/resubmit`
-- `GET /reports/:id/versions`
-- `GET /reports/:id/versions/:versionNumber`
-
 Report ownership comes from the authenticated cookie session. Request bodies cannot set `userId`, `status`, or `currentVersion`. New reports are always `DRAFT` with `currentVersion` 1 and a first `ReportVersion`.
 
 Dates are accepted as `YYYY-MM-DD` and stored as UTC start-of-day values. Draft edits update the current draft `ReportVersion`; provided child collections are replaced deterministically and omitted child collections are left unchanged.
 
 When a manager requests changes, the submitted version remains immutable. The first member correction edit creates `currentVersion + 1`; later correction edits update that unsubmitted correction version. Resubmitting does not increment the version. Submitted and approved reports are read-only for team members.
-
-Managers review reports through:
-
-- `GET /manager/reports?page=1&limit=10&status=SUBMITTED&userId=<userId>&projectId=<projectId>&from=2026-09-01&to=2026-09-30`
-- `GET /manager/reports/:id`
-- `POST /manager/reports/:id/request-changes`
-- `POST /manager/reports/:id/approve`
-
-Request changes body:
-
-```json
-{
-  "comment": "Please clarify the main deliverable."
-}
 ```
 
 `Report` stores ownership, project, week range, status, and the current version number. `ReportVersion` stores the versioned weekly content: notes, tasks, next-week tasks, blockers, achievements, time entries, and reviews tied to that exact version.
@@ -361,13 +259,6 @@ AI output is advisory and may be inaccurate. Users must review and explicitly ap
 
 Dashboard routes require `MANAGER`.
 
-- `GET /dashboard/summary`
-- `GET /dashboard/submission-status`
-- `GET /dashboard/task-trends`
-- `GET /dashboard/project-distribution`
-- `GET /dashboard/time-distribution`
-- `GET /dashboard/activity`
-
 Common filters:
 
 - `weekStart=2026-09-07` or `week=2026-09-07`
@@ -381,44 +272,3 @@ Summary metrics use selected-week semantics. Expected members are active `TEAM_M
 Dashboard content analytics use only each report's current `ReportVersion`. Historical versions are kept for audit/history and are not double-counted in task trends, project distribution, time distribution, or open blocker counts. Activity is derived from `ReportVersion.submittedAt` and `Review` rows, returning recent submitted, resubmitted, request-changes, and approval events.
 
 Dashboard drill-down links target manager report lists only when the result maps cleanly to real reports. For example, a needs-correction card opens `/manager/reports` with `status=NEEDS_CORRECTION` plus the current dashboard date/project/member filters, while `NOT_STARTED` members have no report link.
-
-Example create report request:
-
-```json
-{
-  "weekStart": "2026-09-07",
-  "weekEnd": "2026-09-13",
-  "projectId": "00000000-0000-0000-0000-000000000000",
-  "notes": "Weekly progress notes",
-  "tasks": [
-    {
-      "name": "Implement report APIs",
-      "priority": "HIGH",
-      "plannedPercentage": 100,
-      "actualPercentage": 100,
-      "status": "COMPLETED",
-      "plannedHours": 8,
-      "actualHours": 7.5,
-      "deliverable": "Reports module"
-    }
-  ],
-  "nextWeekTasks": [{ "description": "Prepare manager review APIs" }],
-  "blockers": [
-    {
-      "description": "Waiting for credentials",
-      "isKeyIssue": true,
-      "isResolved": false
-    }
-  ],
-  "achievements": [
-    {
-      "description": "Completed milestone foundation",
-      "isKeyAchievement": true
-    }
-  ],
-  "timeEntries": [
-    { "type": "DEVELOPMENT", "hours": 24 },
-    { "type": "MEETINGS", "hours": 4 }
-  ]
-}
-```
