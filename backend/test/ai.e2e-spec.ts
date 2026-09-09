@@ -41,6 +41,7 @@ describe('AI report assistant (e2e)', () => {
     process.env.JWT_ACCESS_EXPIRES_IN = '15m';
     process.env.GEMINI_API_KEY = 'test-gemini-key';
     process.env.GEMINI_MODEL = 'test-model';
+    process.env.GEMINI_API_VERSION = 'v1';
 
     geminiMocks.GoogleGenAI.mockImplementation(function GoogleGenAIMock() {
       return {
@@ -99,11 +100,17 @@ describe('AI report assistant (e2e)', () => {
 
   beforeEach(() => {
     geminiMocks.generateContent.mockReset();
+    process.env.GEMINI_API_KEY = 'test-gemini-key';
+    process.env.GEMINI_MODEL = 'test-model';
+    process.env.GEMINI_API_VERSION = 'v1';
+    delete process.env.GEMINI_FALLBACK_MODELS;
   });
 
   afterAll(async () => {
     delete process.env.GEMINI_API_KEY;
     delete process.env.GEMINI_MODEL;
+    delete process.env.GEMINI_API_VERSION;
+    delete process.env.GEMINI_FALLBACK_MODELS;
 
     if (prisma) {
       await prisma.report.deleteMany({
@@ -181,6 +188,10 @@ describe('AI report assistant (e2e)', () => {
     });
     expect(geminiMocks.generateContent).toHaveBeenCalledTimes(1);
     expect(geminiMocks.generateContent.mock.calls[0][0].model).toBe('test-model');
+    expect(geminiMocks.GoogleGenAI).toHaveBeenCalledWith({
+      apiKey: 'test-gemini-key',
+      apiVersion: 'v1',
+    });
   });
 
   it('rejects unauthenticated requests', async () => {
@@ -294,6 +305,61 @@ describe('AI report assistant (e2e)', () => {
 
     expect(response.body.suggestion).toBe('Clarified blocker.');
     expect(geminiMocks.generateContent).toHaveBeenCalledTimes(2);
+  });
+
+  it('tries a fallback model when Gemini returns model not found', async () => {
+    process.env.GEMINI_FALLBACK_MODELS = 'fallback-model';
+    geminiMocks.generateContent
+      .mockRejectedValueOnce({
+        response: { status: 404 },
+      })
+      .mockResolvedValueOnce({
+        text: JSON.stringify({
+          action: 'IMPROVE_BLOCKERS',
+          suggestion: 'Fallback model clarified blocker.',
+        }),
+      });
+
+    const response = await request(app.getHttpServer())
+      .post('/ai/report-assistant')
+      .set('Cookie', memberCookie)
+      .send(validAssistantRequest())
+      .expect(200);
+
+    expect(response.body.suggestion).toBe('Fallback model clarified blocker.');
+    expect(geminiMocks.generateContent).toHaveBeenCalledTimes(2);
+    expect(geminiMocks.generateContent.mock.calls[0][0].model).toBe('test-model');
+    expect(geminiMocks.generateContent.mock.calls[1][0].model).toBe(
+      'fallback-model',
+    );
+    delete process.env.GEMINI_FALLBACK_MODELS;
+  });
+
+  it('maps unavailable preferred and fallback models clearly', async () => {
+    process.env.GEMINI_FALLBACK_MODELS = 'fallback-model';
+    geminiMocks.generateContent
+      .mockRejectedValueOnce({
+        response: { status: 404 },
+      })
+      .mockRejectedValueOnce({
+        response: { status: 404 },
+      });
+
+    const response = await request(app.getHttpServer())
+      .post('/ai/report-assistant')
+      .set('Cookie', memberCookie)
+      .send(validAssistantRequest())
+      .expect(503);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        message:
+          'Configured AI model is unavailable. Please check Gemini model settings.',
+        code: 'AI_MODEL_UNAVAILABLE',
+      }),
+    );
+    expect(geminiMocks.generateContent).toHaveBeenCalledTimes(2);
+    delete process.env.GEMINI_FALLBACK_MODELS;
   });
 
   it('maps malformed provider JSON to an invalid response error', async () => {

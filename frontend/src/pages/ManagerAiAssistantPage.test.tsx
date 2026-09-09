@@ -121,6 +121,32 @@ describe('ManagerAiAssistantPage', () => {
     expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
   });
 
+  it('renders model-unavailable errors without a retry action', async () => {
+    vi.mocked(aiApi.askManagerChat).mockRejectedValueOnce(
+      new ApiError(
+        'Configured AI model is unavailable. Please check Gemini model settings.',
+        503,
+        undefined,
+        'AI_MODEL_UNAVAILABLE',
+      ),
+    );
+
+    renderPage();
+
+    await userEvent.type(screen.getByLabelText('Message'), 'Who has open blockers?');
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          'The configured AI model is unavailable. Please check the backend AI settings.',
+        ),
+      ).toBeInTheDocument(),
+    );
+    expect(screen.queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument();
+  });
+
+
   it('retries the last failed message without duplicating the user message', async () => {
     vi.mocked(aiApi.askManagerChat)
       .mockRejectedValueOnce(

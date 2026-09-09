@@ -53,6 +53,8 @@ PORT=3000
 FRONTEND_URL="https://your-frontend.example.com"
 GEMINI_API_KEY="replace-with-a-real-gemini-api-key"
 GEMINI_MODEL="gemini-3.7-flash"
+GEMINI_API_VERSION="v1"
+GEMINI_FALLBACK_MODELS="gemini-2.5-flash,gemini-2.5-flash-lite,gemini-flash-latest"
 AI_REQUEST_TIMEOUT_MS="20000"
 ```
 
@@ -258,7 +260,7 @@ The client sends only the action and current report context. It cannot send a pr
 
 AI output is advisory and may be inaccurate. Users must review and explicitly apply suggestions in the form, then save or submit through the normal report workflow. Provider rate limits may apply based on the configured Gemini account.
 
-AI provider failures are mapped to safe application errors. Rate limits return a retry-later message, slow requests time out through `AI_REQUEST_TIMEOUT_MS`, malformed model responses are reported without exposing provider payloads, and unexpected provider failures are logged only with metadata such as feature, category, provider status/code, model, duration, and context-size estimate.
+AI provider failures are mapped to safe application errors. Rate limits return a retry-later message, slow requests time out through `AI_REQUEST_TIMEOUT_MS`, malformed model responses are reported without exposing provider payloads, and unexpected provider failures are logged only with metadata such as feature, category, provider status/code, model, API version, duration, and context-size estimate. The backend uses `GEMINI_API_VERSION=v1` by default and can try `GEMINI_FALLBACK_MODELS` when the preferred Gemini model returns a model-not-found response.
 
 ## Manager AI Chat Assistant
 

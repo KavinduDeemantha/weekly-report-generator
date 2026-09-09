@@ -4,6 +4,8 @@ const aiMessages: Record<string, string> = {
   AI_RATE_LIMITED: 'AI request limit reached. Try again shortly.',
   AI_TIMEOUT: 'The AI response took too long. Please try again.',
   AI_UNAVAILABLE: 'AI service is temporarily unavailable. Please try again.',
+  AI_MODEL_UNAVAILABLE:
+    'The configured AI model is unavailable. Please check the backend AI settings.',
   AI_INVALID_RESPONSE: 'The AI returned an invalid response. Please try again.',
   AI_CONFIGURATION_ERROR: 'AI Assistant is not configured correctly.',
   AI_UNKNOWN_PROVIDER_ERROR: 'AI Assistant is temporarily unavailable.',
@@ -13,7 +15,6 @@ const retryableCodes = new Set([
   'AI_RATE_LIMITED',
   'AI_TIMEOUT',
   'AI_UNAVAILABLE',
-  'AI_INVALID_RESPONSE',
   'AI_UNKNOWN_PROVIDER_ERROR',
 ]);
 

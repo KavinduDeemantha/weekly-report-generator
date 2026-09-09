@@ -16,6 +16,7 @@ import {
   classifyAiError,
   configurationException,
   invalidModelResponseException,
+  isModelUnavailableAiError,
   isRetryableAiError,
   timeoutException,
   toAiHttpException,
@@ -32,6 +33,12 @@ import {
 } from './ai.types.js';
 
 const DEFAULT_GEMINI_MODEL = 'gemini-3.7-flash';
+const DEFAULT_GEMINI_API_VERSION = 'v1';
+const DEFAULT_GEMINI_FALLBACK_MODELS = [
+  'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
+  'gemini-flash-latest',
+];
 const DEFAULT_AI_TIMEOUT_MS = 20_000;
 const MAX_MANAGER_REPORTS = 25;
 const MAX_TEXT_LENGTH = 300;
@@ -324,65 +331,79 @@ export class AiService {
       throw configurationException();
     }
 
-    const model =
-      this.configService.get<string>('GEMINI_MODEL')?.trim() ||
-      DEFAULT_GEMINI_MODEL;
-    const ai = new GoogleGenAI({ apiKey });
+    const models = this.getCandidateModels();
+    const apiVersion = this.getApiVersion();
+    const ai = new GoogleGenAI({ apiKey, apiVersion });
     const timeoutMs = this.getTimeoutMs();
     const startedAt = Date.now();
-    let attempt = 0;
 
-    while (attempt < 2) {
-      try {
-        const response = await this.withTimeout(
-          ai.models.generateContent({
+    for (const [modelIndex, model] of models.entries()) {
+      let attempt = 0;
+
+      while (attempt < 2) {
+        try {
+          const response = await this.withTimeout(
+            ai.models.generateContent({
+              model,
+              contents: input.contents,
+              config: {
+                systemInstruction: input.systemInstruction,
+                responseMimeType: 'application/json',
+                responseSchema: input.responseSchema,
+              },
+            }),
+            timeoutMs,
+          );
+
+          this.logger.log({
+            message: 'AI request succeeded',
+            feature: input.feature,
             model,
-            contents: input.contents,
-            config: {
-              systemInstruction: input.systemInstruction,
-              responseMimeType: 'application/json',
-              responseSchema: input.responseSchema,
-            },
-          }),
-          timeoutMs,
-        );
+            apiVersion,
+            durationMs: Date.now() - startedAt,
+            contextSizeEstimate: input.contents.length,
+            attempt: attempt + 1,
+            fallbackIndex: modelIndex,
+            usageMetadata: extractUsageMetadata(response),
+          });
 
-        this.logger.log({
-          message: 'AI request succeeded',
-          feature: input.feature,
-          model,
-          durationMs: Date.now() - startedAt,
-          contextSizeEstimate: input.contents.length,
-          attempt: attempt + 1,
-          usageMetadata: extractUsageMetadata(response),
-        });
+          return response;
+        } catch (error) {
+          const classified = classifyAiError(error);
+          const canTryFallback =
+            isModelUnavailableAiError(classified) && modelIndex < models.length - 1;
 
-        return response;
-      } catch (error) {
-        const classified = classifyAiError(error);
+          this.logger.warn({
+            message: 'AI request failed',
+            feature: input.feature,
+            category: classified.category,
+            providerStatus: classified.providerStatus,
+            providerCode: classified.providerCode,
+            providerMessageHint: classified.providerMessageHint,
+            model,
+            apiVersion,
+            durationMs: Date.now() - startedAt,
+            contextSizeEstimate: input.contents.length,
+            attempt: attempt + 1,
+            fallbackIndex: modelIndex,
+            willTryFallback: canTryFallback,
+          });
 
-        this.logger.warn({
-          message: 'AI request failed',
-          feature: input.feature,
-          category: classified.category,
-          providerStatus: classified.providerStatus,
-          providerCode: classified.providerCode,
-          model,
-          durationMs: Date.now() - startedAt,
-          contextSizeEstimate: input.contents.length,
-          attempt: attempt + 1,
-        });
+          if (canTryFallback) {
+            break;
+          }
 
-        if (attempt === 0 && isRetryableAiError(classified)) {
-          attempt += 1;
-          continue;
+          if (attempt === 0 && isRetryableAiError(classified)) {
+            attempt += 1;
+            continue;
+          }
+
+          throw toAiHttpException(classified);
         }
-
-        throw toAiHttpException(classified);
       }
     }
 
-    throw toAiHttpException({ category: AiErrorCategory.UNKNOWN_PROVIDER_ERROR });
+    throw toAiHttpException({ category: AiErrorCategory.MODEL_UNAVAILABLE });
   }
 
   private buildPrompt(dto: ReportAssistantDto): string {
@@ -579,6 +600,33 @@ export class AiService {
     }
 
     return DEFAULT_AI_TIMEOUT_MS;
+  }
+
+  private getApiVersion(): string {
+    return (
+      this.configService.get<string>('GEMINI_API_VERSION')?.trim() ||
+      DEFAULT_GEMINI_API_VERSION
+    );
+  }
+
+  private getCandidateModels(): string[] {
+    const preferredModel =
+      this.configService.get<string>('GEMINI_MODEL')?.trim() ||
+      DEFAULT_GEMINI_MODEL;
+    const configuredFallbacks = this.configService
+      .get<string>('GEMINI_FALLBACK_MODELS')
+      ?.split(',')
+      .map((model) => model.trim())
+      .filter(Boolean);
+
+    return Array.from(
+      new Set([
+        preferredModel,
+        ...(configuredFallbacks?.length
+          ? configuredFallbacks
+          : DEFAULT_GEMINI_FALLBACK_MODELS),
+      ]),
+    );
   }
 }
 

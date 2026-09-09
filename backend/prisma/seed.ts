@@ -163,7 +163,7 @@ async function main() {
     userId: members[0].id,
     projectId: clientPortal.id,
     weekStart: '2026-09-07',
-    weekEnd: '2026-09-09',
+    weekEnd: '2026-09-13',
     status: 'SUBMITTED',
     currentVersion: 1,
     versions: [
@@ -212,7 +212,7 @@ async function main() {
     userId: members[1].id,
     projectId: internalTooling.id,
     weekStart: '2026-09-07',
-    weekEnd: '2026-09-09',
+    weekEnd: '2026-09-13',
     status: 'APPROVED',
     currentVersion: 1,
     versions: [
@@ -259,7 +259,7 @@ async function main() {
     userId: members[2].id,
     projectId: research.id,
     weekStart: '2026-09-07',
-    weekEnd: '2026-09-09',
+    weekEnd: '2026-09-13',
     status: 'NEEDS_CORRECTION',
     currentVersion: 1,
     versions: [
@@ -319,7 +319,7 @@ async function main() {
     userId: members[3].id,
     projectId: clientPortal.id,
     weekStart: '2026-09-07',
-    weekEnd: '2026-09-09',
+    weekEnd: '2026-09-13',
     status: 'DRAFT',
     currentVersion: 1,
     versions: [
