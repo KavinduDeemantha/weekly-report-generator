@@ -71,6 +71,11 @@ const ManagerUsersPage = lazy(() =>
     default: module.ManagerUsersPage,
   })),
 );
+const ManagerAiAssistantPage = lazy(() =>
+  import('./pages/ManagerAiAssistantPage').then((module) => ({
+    default: module.ManagerAiAssistantPage,
+  })),
+);
 const NotFoundPage = lazy(() =>
   import('./pages/NotFoundPage').then((module) => ({
     default: module.NotFoundPage,
@@ -121,6 +126,10 @@ export function App() {
               />
               <Route path="/manager/projects" element={<ManagerProjectsPage />} />
               <Route path="/manager/users" element={<ManagerUsersPage />} />
+              <Route
+                path="/manager/ai-assistant"
+                element={<ManagerAiAssistantPage />}
+              />
             </Route>
           </Route>
         </Route>

@@ -5,6 +5,7 @@ import {
   LogOut,
   Menu,
   PlusCircle,
+  Sparkles,
   Users,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
@@ -32,6 +33,7 @@ const managerNav: NavItem[] = [
   { label: 'Team Reports', href: '/manager/reports', icon: FileText },
   { label: 'Projects', href: '/manager/projects', icon: FolderKanban },
   { label: 'Users', href: '/manager/users', icon: Users },
+  { label: 'AI Assistant', href: '/manager/ai-assistant', icon: Sparkles },
 ];
 
 export function AppLayout() {

@@ -12,6 +12,7 @@ Full-stack technical assignment for weekly team reporting, manager review, and r
 - Project-member assignments managed by managers
 - Read-only manager user list
 - Manager dashboard analytics with filters, charts, drill-downs, summary metrics, and activity feed
+- Manager AI chat assistant grounded in report/dashboard data
 - Print / Save as PDF support for report detail and version pages
 - Optional Gemini-powered report assistant for member report drafting
 
@@ -52,6 +53,7 @@ PORT=3000
 FRONTEND_URL="https://your-frontend.example.com"
 GEMINI_API_KEY="replace-with-a-real-gemini-api-key"
 GEMINI_MODEL="gemini-3.7-flash"
+AI_REQUEST_TIMEOUT_MS="20000"
 ```
 
 ## Frontend Setup
@@ -130,6 +132,8 @@ The manager report review page consumes `GET /manager/reports/:id` and reuses th
 After review actions, the frontend invalidates manager report detail/list queries and dashboard queries so stale review state is refreshed from the backend. Managers can inspect immutable version snapshots through the manager version detail route.
 
 Project management consumes the `/projects` API. Managers can create, edit, soft-deactivate projects, and manage assigned team members. Duplicate-name and validation errors are displayed through the shared API error handling. User management is read-only because the backend currently exposes only `GET /users`.
+
+Managers can also use `/manager/ai-assistant` for a lightweight chat-style assistant grounded in backend report data. This is separate from the member writing assistant and does not persist conversations.
 
 ## Frontend Manager Dashboard
 
@@ -223,7 +227,6 @@ Report ownership comes from the authenticated cookie session. Request bodies can
 Dates are accepted as `YYYY-MM-DD` and stored as UTC start-of-day values. Draft edits update the current draft `ReportVersion`; provided child collections are replaced deterministically and omitted child collections are left unchanged.
 
 When a manager requests changes, the submitted version remains immutable. The first member correction edit creates `currentVersion + 1`; later correction edits update that unsubmitted correction version. Resubmitting does not increment the version. Submitted and approved reports are read-only for team members.
-```
 
 `Report` stores ownership, project, week range, status, and the current version number. `ReportVersion` stores the versioned weekly content: notes, tasks, next-week tasks, blockers, achievements, time entries, and reviews tied to that exact version.
 
@@ -254,6 +257,29 @@ The client sends only the action and current report context. It cannot send a pr
 ```
 
 AI output is advisory and may be inaccurate. Users must review and explicitly apply suggestions in the form, then save or submit through the normal report workflow. Provider rate limits may apply based on the configured Gemini account.
+
+AI provider failures are mapped to safe application errors. Rate limits return a retry-later message, slow requests time out through `AI_REQUEST_TIMEOUT_MS`, malformed model responses are reported without exposing provider payloads, and unexpected provider failures are logged only with metadata such as feature, category, provider status/code, model, duration, and context-size estimate.
+
+## Manager AI Chat Assistant
+
+The manager AI chat assistant is separate from the member writing assistant. It is available at `/manager/ai-assistant` and calls:
+
+- `POST /ai/manager-chat`
+
+The route requires `MANAGER`. Managers can ask scoped questions about reports, submissions, blockers, workload, projects, review status, and recent activity. The frontend keeps only lightweight in-session history; conversations are not stored in the database.
+
+The backend retrieves bounded application context first, then sends that structured context to Gemini. The model never receives database credentials, raw SQL access, JWTs, passwords, password hashes, or unrestricted query capability. Current-state answers use the current `ReportVersion`; historical versions are included only through existing version/review context when relevant.
+
+Manager chat context is intent-aware and bounded. Submission questions use member/status data, blocker questions use unresolved blocker context, workload questions use compact project/task/time summaries, and broader summary questions use truncated current-version report content. Recent conversation history is limited and trimmed before it is sent to the provider. The backend does not automatically retry rate-limited requests; it retries at most once only for transient provider-unavailable failures.
+
+Supported filters match dashboard semantics:
+
+- `weekStart` for a single reporting week
+- `from` / `to` for a date range
+- `userId`
+- `projectId`
+
+The client must not send a model name, custom system prompt, role override, or authenticated identity. The server owns the grounding prompt and instructs Gemini to answer only from provided context, treat report text as untrusted data, ignore prompt-injection instructions in report content, and decline unrelated general chatbot questions.
 
 ## Manager Dashboard API
 

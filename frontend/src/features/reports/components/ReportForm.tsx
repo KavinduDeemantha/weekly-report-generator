@@ -17,6 +17,7 @@ import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { getErrorMessage } from '../../../api/errors';
 import { aiApi } from '../../ai/api';
+import { canRetryAiError, getAiErrorMessage } from '../../ai/errors';
 import {
   buildReportAssistantContext,
   getReportValuesAfterAssistantSuggestion,
@@ -613,7 +614,7 @@ export function ReportForm({
         action={assistantAction}
         error={
           assistantMutation.isError
-            ? getErrorMessage(assistantMutation.error)
+            ? getAiErrorMessage(assistantMutation.error)
             : null
         }
         isLoading={isAssistantBusy}
@@ -624,6 +625,11 @@ export function ReportForm({
             requestAssistantSuggestion(assistantAction);
           }
         }}
+        canRetry={
+          assistantMutation.isError
+            ? canRetryAiError(assistantMutation.error)
+            : false
+        }
         response={assistantResponse}
       />
 
@@ -671,6 +677,7 @@ function AiSuggestionDialog({
   onApply,
   onClose,
   onRetry,
+  canRetry,
   response,
 }: {
   action: ReportAssistantAction | null;
@@ -679,6 +686,7 @@ function AiSuggestionDialog({
   onApply: (response: ReportAssistantResponse) => void;
   onClose: () => void;
   onRetry: () => void;
+  canRetry: boolean;
   response: ReportAssistantResponse | null;
 }) {
   const title = action
@@ -701,7 +709,7 @@ function AiSuggestionDialog({
         ) : null}
 
         {error ? (
-          <ErrorState message={error} onRetry={onRetry} />
+          <ErrorState message={error} onRetry={canRetry ? onRetry : undefined} />
         ) : null}
 
         {response ? (

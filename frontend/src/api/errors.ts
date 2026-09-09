@@ -4,6 +4,8 @@ type BackendErrorBody = {
   message?: string | string[];
   error?: string;
   statusCode?: number;
+  code?: string;
+  retryAfterSeconds?: number;
 };
 
 export class ApiError extends Error {
@@ -11,6 +13,8 @@ export class ApiError extends Error {
     message: string,
     public readonly statusCode?: number,
     public readonly details?: string[],
+    public readonly code?: string,
+    public readonly retryAfterSeconds?: number,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -62,6 +66,8 @@ export function normalizeApiError(error: unknown): ApiError {
       cleaned.message ?? defaultMessageForStatus(status),
       status,
       cleaned.details,
+      body?.code,
+      body?.retryAfterSeconds,
     );
   }
 

@@ -29,3 +29,41 @@ export type ReportAssistantResponse = {
   suggestion: string;
   suggestions?: string[];
 };
+
+export type ManagerChatMessage = {
+  role: 'user' | 'assistant';
+  content: string;
+};
+
+export type ManagerChatFilters = {
+  weekStart?: string;
+  from?: string;
+  to?: string;
+  userId?: string;
+  projectId?: string;
+};
+
+export type ManagerChatRequest = {
+  message: string;
+  filters?: ManagerChatFilters;
+  history?: ManagerChatMessage[];
+};
+
+export type ManagerChatResponse = {
+  answer: string;
+  scope: {
+    mode: 'week' | 'range';
+    weekStart?: string;
+    from?: string;
+    to?: string;
+  };
+  sources: {
+    reportCount: number;
+    memberCount: number;
+  };
+  relatedReports?: {
+    reportId: string;
+    memberName: string;
+    projectName: string;
+  }[];
+};
