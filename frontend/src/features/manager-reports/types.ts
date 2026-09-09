@@ -4,6 +4,7 @@ export type ManagerReportFilters = {
   page: number;
   limit: number;
   status?: ReportStatus;
+  statusIn?: string;
   userId?: string;
   projectId?: string;
   weekStart?: string;

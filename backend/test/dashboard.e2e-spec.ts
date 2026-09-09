@@ -277,6 +277,29 @@ describe('Manager Dashboard Analytics (e2e)', () => {
     ).toBe(true);
   });
 
+  it('manager reports supports submitted-related statusIn filters for dashboard drill-downs', async () => {
+    const response = await request(app.getHttpServer())
+      .get(
+        `/manager/reports?weekStart=${weekStart}&projectId=${projectId}&statusIn=SUBMITTED,NEEDS_CORRECTION,APPROVED&limit=100`,
+      )
+      .set('Cookie', managerCookie)
+      .expect(200);
+
+    expect(response.body.data).toHaveLength(3);
+    expect(response.body.data.map((report: { status: string }) => report.status).sort()).toEqual([
+      'APPROVED',
+      'NEEDS_CORRECTION',
+      'SUBMITTED',
+    ]);
+  });
+
+  it('manager reports rejects malformed statusIn filters', async () => {
+    await request(app.getHttpServer())
+      .get(`/manager/reports?statusIn=SUBMITTED,UNKNOWN_STATUS`)
+      .set('Cookie', managerCookie)
+      .expect(400);
+  });
+
   it('summary metrics count compliance, pending states, and current open blockers correctly', async () => {
     const submittedSummary = await getSummary(submittedUserId);
     const needsCorrectionSummary = await getSummary(needsCorrectionUserId);

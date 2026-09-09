@@ -22,12 +22,13 @@ type TimelineEvent = {
   detail: string;
   comment?: string | null;
   icon: typeof FilePlus2;
+  versionNumber: number;
 };
 
 export function ReportActivityTimeline({ report }: { report: ReportDetail }) {
-  const events = buildTimelineEvents(report);
+  const groups = groupEventsByVersion(buildTimelineEvents(report));
 
-  if (events.length === 0) {
+  if (groups.length === 0) {
     return null;
   }
 
@@ -40,32 +41,45 @@ export function ReportActivityTimeline({ report }: { report: ReportDetail }) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ol className="space-y-4">
-          {events.map((event) => {
-            const Icon = event.icon;
-
-            return (
-              <li className="flex gap-3" key={event.key}>
-                <span className="mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-indigo-50 text-primary">
-                  <Icon className="h-4 w-4" aria-hidden="true" />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-sm font-medium">{event.label}</span>
-                  <span className="mt-1 block text-xs text-muted-foreground">
-                    {formatDateTime(event.timestamp)} · {event.detail}
-                  </span>
-                  {event.comment ? (
-                    <span className="mt-2 block break-words rounded-md border border-border bg-muted/40 p-2 text-sm">
-                      {event.comment}
-                    </span>
-                  ) : null}
-                </span>
-              </li>
-            );
-          })}
-        </ol>
+        <div className="space-y-5">
+          {groups.map((group) => (
+            <section className="space-y-3" key={group.key}>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {group.label}
+              </h3>
+              <ol className="space-y-4">
+                {group.events.map((event) => (
+                  <TimelineEventItem event={event} key={event.key} />
+                ))}
+              </ol>
+            </section>
+          ))}
+        </div>
       </CardContent>
     </Card>
+  );
+}
+
+function TimelineEventItem({ event }: { event: TimelineEvent }) {
+  const Icon = event.icon;
+
+  return (
+    <li className="flex gap-3">
+      <span className="mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-indigo-50 text-primary">
+        <Icon className="h-4 w-4" aria-hidden="true" />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-medium">{event.label}</span>
+        <span className="mt-1 block text-xs text-muted-foreground">
+          {formatDateTime(event.timestamp)} · {event.detail}
+        </span>
+        {event.comment ? (
+          <span className="mt-2 block break-words rounded-md border border-border bg-muted/40 p-2 text-sm">
+            {event.comment}
+          </span>
+        ) : null}
+      </span>
+    </li>
   );
 }
 
@@ -86,6 +100,7 @@ function buildTimelineEvents(report: ReportDetail): TimelineEvent[] {
       timestamp: report.createdAt,
       detail: `${report.user?.name ?? 'Team member'} created the report draft.`,
       icon: FilePlus2,
+      versionNumber: 1,
     },
   ];
 
@@ -97,16 +112,19 @@ function buildTimelineEvents(report: ReportDetail): TimelineEvent[] {
         timestamp: version.createdAt,
         detail: `Version ${version.versionNumber}`,
         icon: RefreshCw,
+        versionNumber: version.versionNumber,
       });
     }
 
     if (version.submittedAt) {
       events.push({
         key: `version-${version.versionNumber}-submitted`,
-        label: version.versionNumber > 1 ? 'Report resubmitted' : 'Report submitted',
+        label:
+          version.versionNumber > 1 ? 'Report resubmitted' : 'Report submitted',
         timestamp: version.submittedAt,
         detail: `Version ${version.versionNumber}`,
         icon: Send,
+        versionNumber: version.versionNumber,
       });
     }
   }
@@ -128,8 +146,34 @@ function toReviewEvent(review: Review): TimelineEvent {
     key: `review-${review.id}`,
     label: isApproved ? 'Report approved' : 'Changes requested',
     timestamp: review.createdAt,
-    detail: `${isApproved ? 'Approved' : 'Reviewed'} by ${review.reviewer.name} · Version ${review.versionNumber}`,
+    detail: `${isApproved ? 'Approved' : 'Reviewed'} by ${
+      review.reviewer.name
+    } · Version ${review.versionNumber}`,
     comment: review.comment,
     icon: isApproved ? CheckCircle2 : MessageSquareText,
+    versionNumber: review.versionNumber,
   };
+}
+
+function groupEventsByVersion(events: TimelineEvent[]) {
+  const groups = new Map<number, TimelineEvent[]>();
+
+  for (const event of events) {
+    groups.set(event.versionNumber, [
+      ...(groups.get(event.versionNumber) ?? []),
+      event,
+    ]);
+  }
+
+  return [...groups.entries()]
+    .sort(([left], [right]) => left - right)
+    .map(([versionNumber, versionEvents]) => ({
+      key: `version-${versionNumber}`,
+      label: `Version ${versionNumber}`,
+      events: versionEvents.sort(
+        (left, right) =>
+          new Date(left.timestamp).getTime() -
+          new Date(right.timestamp).getTime(),
+      ),
+    }));
 }

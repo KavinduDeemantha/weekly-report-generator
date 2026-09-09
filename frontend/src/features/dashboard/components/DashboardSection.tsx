@@ -13,6 +13,7 @@ type DashboardSectionProps = {
   description?: string;
   emptyMessage?: string;
   error?: unknown;
+  id?: string;
   isEmpty?: boolean;
   isLoading?: boolean;
   title: string;
@@ -23,12 +24,13 @@ export function DashboardSection({
   description,
   emptyMessage = 'No dashboard data for the selected filters.',
   error,
+  id,
   isEmpty,
   isLoading,
   title,
 }: DashboardSectionProps) {
   return (
-    <Card className="overflow-hidden">
+    <Card className="scroll-mt-24 overflow-hidden" id={id}>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         {description ? <CardDescription>{description}</CardDescription> : null}

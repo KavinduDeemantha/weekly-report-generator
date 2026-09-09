@@ -6,6 +6,7 @@ export function buildManagerReportsUrl(
   extra: {
     projectId?: string;
     status?: ReportStatus;
+    statusIn?: ReportStatus[];
   } = {},
 ) {
   const params = new URLSearchParams();
@@ -32,6 +33,10 @@ export function buildManagerReportsUrl(
 
   if (extra.status) {
     params.set('status', extra.status);
+  }
+
+  if (extra.statusIn && extra.statusIn.length > 0) {
+    params.set('statusIn', extra.statusIn.join(','));
   }
 
   const query = params.toString();

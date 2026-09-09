@@ -50,6 +50,12 @@ const cards = [
   },
 ] as const;
 
+const submittedRelatedStatuses = [
+  'SUBMITTED',
+  'NEEDS_CORRECTION',
+  'APPROVED',
+] as const;
+
 export function SummaryCards({
   data,
   filters,
@@ -69,10 +75,7 @@ export function SummaryCards({
         const isHelpOpen = openHelpKey === card.key;
         const helpId = `dashboard-summary-${card.key}-help`;
 
-        const href =
-          card.key === 'needsCorrectionCount'
-            ? buildManagerReportsUrl(filters, { status: 'NEEDS_CORRECTION' })
-            : null;
+        const action = getCardAction(card.key, filters);
 
         return (
           <Card className={`border-t-4 ${card.accent.split(' ')[0]}`} key={card.key}>
@@ -115,13 +118,21 @@ export function SummaryCards({
                     {value}
                     {'suffix' in card ? card.suffix : ''}
                   </p>
-                  {href ? (
+                  {action?.kind === 'route' ? (
                     <Link
                       className="text-sm font-medium text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                      to={href}
+                      to={action.href}
                     >
-                      View reports
+                      {action.label}
                     </Link>
+                  ) : null}
+                  {action?.kind === 'anchor' ? (
+                    <a
+                      className="text-sm font-medium text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      href={action.href}
+                    >
+                      {action.label}
+                    </a>
                   ) : null}
                 </div>
               )}
@@ -131,6 +142,42 @@ export function SummaryCards({
       })}
     </div>
   );
+}
+
+function getCardAction(
+  key: (typeof cards)[number]['key'],
+  filters: DashboardFilters,
+):
+  | { kind: 'route'; href: string; label: string }
+  | { kind: 'anchor'; href: string; label: string }
+  | null {
+  if (key === 'totalReportsSubmitted') {
+    return {
+      kind: 'route',
+      href: buildManagerReportsUrl(filters, {
+        statusIn: [...submittedRelatedStatuses],
+      }),
+      label: 'View reports',
+    };
+  }
+
+  if (key === 'pendingCount') {
+    return {
+      kind: 'anchor',
+      href: '#submission-status',
+      label: 'View members',
+    };
+  }
+
+  if (key === 'needsCorrectionCount') {
+    return {
+      kind: 'route',
+      href: buildManagerReportsUrl(filters, { status: 'NEEDS_CORRECTION' }),
+      label: 'View reports',
+    };
+  }
+
+  return null;
 }
 
 function MetricHelp({

@@ -188,8 +188,9 @@ export class ManagerReportsService {
 
 function createManagerReportWhere(query: ReportQueryDto): Prisma.ReportWhereInput {
   const weekInput = query.weekStart ?? query.week;
+  const statuses = parseStatusIn(query.statusIn);
   const where: Prisma.ReportWhereInput = {
-    status: query.status,
+    status: statuses ? { in: statuses } : query.status,
     userId: query.userId,
     projectId: query.projectId,
   };
@@ -204,4 +205,25 @@ function createManagerReportWhere(query: ReportQueryDto): Prisma.ReportWhereInpu
   }
 
   return where;
+}
+
+function parseStatusIn(value: string | undefined): ReportStatus[] | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const statuses = value.split(',').map((status) => status.trim()).filter(Boolean);
+  const validStatuses = new Set(Object.values(ReportStatus));
+
+  if (statuses.length === 0) {
+    return undefined;
+  }
+
+  for (const status of statuses) {
+    if (!validStatuses.has(status as ReportStatus)) {
+      throw new BadRequestException('Invalid statusIn filter');
+    }
+  }
+
+  return statuses as ReportStatus[];
 }

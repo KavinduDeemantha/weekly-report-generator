@@ -119,6 +119,7 @@ export function ManagerDashboardPage() {
           description="Current submission state for each active team member."
           emptyMessage="No active team members match the selected filters."
           error={submissionStatus.error}
+          id="submission-status"
           isEmpty={(submissionStatus.data ?? []).length === 0}
           isLoading={submissionStatus.isLoading}
           title="Submission Status"

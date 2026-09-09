@@ -88,9 +88,61 @@ describe('dashboard components', () => {
       />,
     );
 
-    expect(screen.getByRole('link', { name: 'View reports' })).toHaveAttribute(
+    expect(
+      screen
+        .getAllByRole('link', { name: 'View reports' })
+        .some(
+          (link) =>
+            link.getAttribute('href') ===
+            '/manager/reports?weekStart=2026-09-07&projectId=project-1&status=NEEDS_CORRECTION',
+        ),
+    ).toBe(true);
+  });
+
+  it('generates an accurate submitted-related drill-down URL', () => {
+    renderWithProviders(
+      <SummaryCards
+        isLoading={false}
+        filters={{ weekStart: '2026-09-07' }}
+        data={{
+          totalReportsSubmitted: 3,
+          submissionComplianceRate: 75,
+          pendingCount: 1,
+          needsCorrectionCount: 1,
+          openBlockersCount: 2,
+        }}
+      />,
+    );
+
+    expect(
+      screen
+        .getAllByRole('link', { name: 'View reports' })
+        .some(
+          (link) =>
+            link.getAttribute('href') ===
+            '/manager/reports?weekStart=2026-09-07&statusIn=SUBMITTED%2CNEEDS_CORRECTION%2CAPPROVED',
+        ),
+    ).toBe(true);
+  });
+
+  it('links pending to the submission-status member view', () => {
+    renderWithProviders(
+      <SummaryCards
+        isLoading={false}
+        filters={{ weekStart: '2026-09-07' }}
+        data={{
+          totalReportsSubmitted: 3,
+          submissionComplianceRate: 75,
+          pendingCount: 1,
+          needsCorrectionCount: 1,
+          openBlockersCount: 2,
+        }}
+      />,
+    );
+
+    expect(screen.getByRole('link', { name: 'View members' })).toHaveAttribute(
       'href',
-      '/manager/reports?weekStart=2026-09-07&projectId=project-1&status=NEEDS_CORRECTION',
+      '#submission-status',
     );
   });
 
@@ -261,6 +313,8 @@ describe('dashboard components', () => {
     expect(screen.getByText('Report resubmitted')).toBeInTheDocument();
     expect(screen.getByText('Report approved')).toBeInTheDocument();
     expect(screen.getByText('Clarify blocker.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Version 1' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Version 2' })).toBeInTheDocument();
   });
 
   it('defaults to single week mode and shows only the week input', () => {
@@ -408,6 +462,8 @@ function createDashboardFilterQueryClient() {
           name: 'Team Member',
           email: 'member@example.com',
           role: 'TEAM_MEMBER',
+          isActive: true,
+          createdAt: '2026-09-01T00:00:00.000Z',
         },
       ],
       meta: { page: 1, limit: 100, total: 1 },

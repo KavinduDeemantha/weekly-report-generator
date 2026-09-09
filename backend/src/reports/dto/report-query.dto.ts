@@ -4,6 +4,7 @@ import {
   IsEnum,
   IsInt,
   IsOptional,
+  IsString,
   IsUUID,
   Max,
   Min,
@@ -27,6 +28,10 @@ export class ReportQueryDto {
   @IsOptional()
   @IsEnum(ReportStatus)
   status?: ReportStatus;
+
+  @IsOptional()
+  @IsString()
+  statusIn?: string;
 
   @IsOptional()
   @IsUUID()
