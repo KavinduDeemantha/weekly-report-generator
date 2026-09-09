@@ -171,12 +171,12 @@ export function ManagerReportDetailPage() {
           <div>
             <Label htmlFor="comment">Comment</Label>
             <textarea
-              className="mt-2 min-h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              className="mt-2 min-h-32 w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm transition-colors focus-visible:border-primary"
               id="comment"
               {...form.register('comment')}
             />
             {form.formState.errors.comment ? (
-              <p className="mt-1 text-sm text-red-600">
+              <p className="mt-1 text-sm text-destructive">
                 {form.formState.errors.comment.message}
               </p>
             ) : null}
@@ -231,7 +231,7 @@ function VersionSummaries({
       <CardContent className="space-y-2">
         {versions.map((version) => (
           <div
-            className="flex flex-col gap-2 rounded-md border border-border bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between"
+            className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-3 sm:flex-row sm:items-center sm:justify-between"
             key={version.versionNumber}
           >
             <div>

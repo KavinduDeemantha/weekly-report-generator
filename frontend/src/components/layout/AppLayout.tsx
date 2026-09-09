@@ -1,4 +1,12 @@
-import { LogOut, Menu, PlusCircle, Users, FolderKanban, LayoutDashboard, FileText } from 'lucide-react';
+import {
+  FileText,
+  FolderKanban,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  PlusCircle,
+  Users,
+} from 'lucide-react';
 import type { ComponentType } from 'react';
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
@@ -44,19 +52,22 @@ export function AppLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-background">
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-40 w-72 border-r border-border bg-background px-4 py-5 transition-transform lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-40 w-72 border-r border-slate-800 bg-slate-950 px-4 py-5 text-white shadow-2xl shadow-slate-950/10 transition-transform lg:translate-x-0',
           isMobileOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
         <div className="flex h-full flex-col">
           <div className="px-2">
-            <p className="text-sm font-semibold uppercase text-muted-foreground">
+            <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground shadow-sm">
+              WR
+            </div>
+            <p className="text-xs font-semibold uppercase text-slate-400">
               Weekly Reports
             </p>
-            <h1 className="mt-2 text-xl font-semibold tracking-normal">
+            <h1 className="mt-2 text-xl font-semibold tracking-normal text-white">
               Team Workspace
             </h1>
           </div>
@@ -72,8 +83,9 @@ export function AppLayout() {
                   end={item.href === getHomePathForRole(user.role)}
                   className={({ isActive }) =>
                     cn(
-                      'flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
-                      isActive && 'bg-muted text-foreground',
+                      'group relative flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-900 hover:text-white',
+                      isActive &&
+                        'bg-primary/15 text-white ring-1 ring-primary/25 before:absolute before:left-0 before:h-5 before:w-1 before:rounded-r-full before:bg-accent',
                     )
                   }
                   onClick={() => setIsMobileOpen(false)}
@@ -85,12 +97,14 @@ export function AppLayout() {
             })}
           </nav>
 
-          <div className="mt-auto rounded-lg border border-border bg-slate-50 p-4">
-            <p className="truncate text-sm font-medium">{user.name}</p>
-            <p className="mt-1 truncate text-xs text-muted-foreground">
+          <div className="mt-auto rounded-lg border border-slate-800 bg-slate-900/70 p-4">
+            <p className="truncate text-sm font-medium text-white">{user.name}</p>
+            <p className="mt-1 truncate text-xs text-slate-400">
               {user.email}
             </p>
-            <Badge className="mt-3">{user.role.replace('_', ' ')}</Badge>
+            <Badge className="mt-3 border-primary/30 bg-primary/15 text-indigo-100">
+              {user.role.replace('_', ' ')}
+            </Badge>
           </div>
         </div>
       </aside>
@@ -98,14 +112,14 @@ export function AppLayout() {
       {isMobileOpen ? (
         <button
           aria-label="Close navigation"
-          className="fixed inset-0 z-30 bg-slate-900/30 lg:hidden"
+          className="fixed inset-0 z-30 bg-slate-950/50 lg:hidden"
           type="button"
           onClick={() => setIsMobileOpen(false)}
         />
       ) : null}
 
       <div className="lg:pl-72">
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border bg-background px-4 sm:px-6">
+        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border bg-card/95 px-4 shadow-sm backdrop-blur sm:px-6">
           <div className="flex items-center gap-3">
             <Button
               aria-label="Open navigation"
@@ -118,10 +132,10 @@ export function AppLayout() {
               <Menu className="h-5 w-5" aria-hidden="true" />
             </Button>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">
+              <p className="text-xs font-medium uppercase text-muted-foreground">
                 Signed in as
               </p>
-              <p className="text-sm font-semibold">{user.name}</p>
+              <p className="text-sm font-semibold text-foreground">{user.name}</p>
             </div>
           </div>
 
@@ -136,7 +150,7 @@ export function AppLayout() {
           </Button>
         </header>
 
-        <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
+        <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:py-10">
           <Outlet />
         </main>
       </div>

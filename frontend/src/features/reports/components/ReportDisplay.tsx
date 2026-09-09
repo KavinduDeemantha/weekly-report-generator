@@ -23,9 +23,12 @@ type ReportLike = ReportDetail | ReportVersionDetail;
 
 export function ReportHeader({ report }: { report: ReportDetail }) {
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5 shadow-soft sm:flex-row sm:items-start sm:justify-between sm:p-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-normal">
+        <p className="text-xs font-semibold uppercase text-muted-foreground">
+          Weekly report
+        </p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-normal">
           {formatDate(report.weekStart)} to {formatDate(report.weekEnd)}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -73,7 +76,7 @@ export function ReviewFeedback({
           <CardContent className="space-y-3">
             {reviews.map((review) => (
               <div
-                className="rounded-md border border-border bg-slate-50 p-3"
+                className="rounded-lg border border-border bg-muted/50 p-3"
                 key={review.id}
               >
                 <div className="flex flex-wrap items-center gap-2">
@@ -110,7 +113,7 @@ export function ReportContent({ report }: { report: ReportLike }) {
           <CardTitle>Notes</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="whitespace-pre-line text-sm text-muted-foreground">
+          <p className="whitespace-pre-line rounded-lg border border-border bg-muted/40 p-4 text-sm leading-6 text-muted-foreground">
             {content.notes || 'No notes added.'}
           </p>
         </CardContent>
@@ -141,29 +144,29 @@ function TasksTable({ tasks }: { tasks: ReportTask[] }) {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] text-left text-sm">
-              <thead className="border-b border-border text-xs uppercase text-muted-foreground">
+              <thead className="border-b border-border bg-muted/60 text-xs uppercase text-muted-foreground">
                 <tr>
-                  <th className="py-2 pr-4 font-medium">Task</th>
-                  <th className="py-2 pr-4 font-medium">Priority</th>
-                  <th className="py-2 pr-4 font-medium">Status</th>
-                  <th className="py-2 pr-4 font-medium">Plan</th>
-                  <th className="py-2 pr-4 font-medium">Actual</th>
-                  <th className="py-2 pr-4 font-medium">Hours</th>
-                  <th className="py-2 font-medium">Deliverable</th>
+                  <th className="px-3 py-2 font-medium">Task</th>
+                  <th className="px-3 py-2 font-medium">Priority</th>
+                  <th className="px-3 py-2 font-medium">Status</th>
+                  <th className="px-3 py-2 font-medium">Plan</th>
+                  <th className="px-3 py-2 font-medium">Actual</th>
+                  <th className="px-3 py-2 font-medium">Hours</th>
+                  <th className="px-3 py-2 font-medium">Deliverable</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {tasks.map((task) => (
-                  <tr key={task.id}>
-                    <td className="py-3 pr-4 font-medium">{task.name}</td>
-                    <td className="py-3 pr-4">{task.priority}</td>
-                    <td className="py-3 pr-4">{task.status.replace('_', ' ')}</td>
-                    <td className="py-3 pr-4">{task.plannedPercentage}%</td>
-                    <td className="py-3 pr-4">{task.actualPercentage}%</td>
-                    <td className="py-3 pr-4">
+                  <tr className="transition-colors hover:bg-muted/40" key={task.id}>
+                    <td className="px-3 py-3 font-medium">{task.name}</td>
+                    <td className="px-3 py-3">{task.priority}</td>
+                    <td className="px-3 py-3">{task.status.replace('_', ' ')}</td>
+                    <td className="px-3 py-3">{task.plannedPercentage}%</td>
+                    <td className="px-3 py-3">{task.actualPercentage}%</td>
+                    <td className="px-3 py-3">
                       {task.actualHours ?? 0}/{task.plannedHours ?? 0}
                     </td>
-                    <td className="py-3">{task.deliverable ?? '-'}</td>
+                    <td className="px-3 py-3">{task.deliverable ?? '-'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -195,7 +198,7 @@ function SimpleList<T>({
         ) : (
           <ul className="space-y-2">
             {items.map((item, index) => (
-              <li className="rounded-md bg-slate-50 p-3 text-sm" key={index}>
+              <li className="rounded-lg border border-border bg-muted/40 p-3 text-sm" key={index}>
                 <span className="break-words">{getText(item)}</span>
               </li>
             ))}
@@ -218,12 +221,12 @@ function BlockersList({ blockers }: { blockers: Blocker[] }) {
         ) : (
           blockers.map((blocker) => (
             <div
-              className="rounded-md border border-border bg-slate-50 p-3"
+              className="rounded-lg border border-border bg-muted/40 p-3"
               key={blocker.id}
             >
               <div className="flex flex-wrap items-center gap-2">
                 {blocker.isKeyIssue ? (
-                  <Badge className="border-amber-200 bg-amber-50 text-amber-800">
+                  <Badge className="border-amber-300 bg-amber-50 text-amber-800">
                     Key issue
                   </Badge>
                 ) : null}
@@ -256,7 +259,7 @@ function AchievementsList({ achievements }: { achievements: Achievement[] }) {
         ) : (
           achievements.map((achievement) => (
             <div
-              className="rounded-md border border-border bg-slate-50 p-3"
+              className="rounded-lg border border-green-100 bg-green-50/50 p-3"
               key={achievement.id}
             >
               <div className="flex items-start gap-2">
@@ -288,7 +291,7 @@ function TimeBreakdown({ entries }: { entries: TimeEntry[] }) {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {entries.map((entry) => (
               <div
-                className="rounded-md border border-border bg-slate-50 p-3"
+                className="rounded-lg border border-border bg-muted/40 p-3"
                 key={entry.id}
               >
                 <p className="text-xs font-medium uppercase text-muted-foreground">

@@ -9,8 +9,8 @@ type ErrorStateProps = {
 
 export function PageLoading({ label = 'Loading' }: { label?: string }) {
   return (
-    <div className="flex min-h-56 items-center justify-center text-sm text-muted-foreground">
-      <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+    <div className="flex min-h-56 items-center justify-center rounded-lg border border-dashed border-border bg-card text-sm text-muted-foreground">
+      <Loader2 className="mr-2 h-4 w-4 animate-spin text-primary" aria-hidden="true" />
       {label}
     </div>
   );
@@ -42,8 +42,10 @@ export function EmptyState({
   description: string;
 }) {
   return (
-    <div className="flex min-h-48 flex-col items-center justify-center rounded-lg border border-dashed border-border bg-background p-8 text-center">
-      <FileText className="mb-3 h-8 w-8 text-muted-foreground" aria-hidden="true" />
+    <div className="flex min-h-48 flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card p-8 text-center shadow-sm">
+      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+        <FileText className="h-5 w-5" aria-hidden="true" />
+      </div>
       <h2 className="text-base font-semibold text-foreground">{title}</h2>
       <p className="mt-1 max-w-md text-sm text-muted-foreground">
         {description}

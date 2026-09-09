@@ -31,7 +31,7 @@ export function ConfirmDialog({
       onClose={onCancel}
       title={title}
     >
-      <div className="flex flex-wrap justify-end gap-2">
+      <div className="-mx-5 -mb-5 mt-1 flex flex-wrap justify-end gap-2 border-t border-border bg-slate-50 px-5 py-4">
         <Button
           type="button"
           variant="outline"

@@ -94,10 +94,10 @@ export function ManagerProjectsPage() {
       ) : null}
 
       {projectsQuery.data && projectsQuery.data.data.length > 0 ? (
-        <div className="overflow-hidden rounded-lg border border-border bg-background">
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-soft">
           <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-left text-sm">
-            <thead className="border-b border-border bg-slate-50 text-xs uppercase text-muted-foreground">
+            <thead className="border-b border-border bg-muted/70 text-xs uppercase text-muted-foreground">
               <tr>
                 <th className="px-4 py-3 font-medium">Project</th>
                 <th className="px-4 py-3 font-medium">Status</th>
@@ -106,7 +106,7 @@ export function ManagerProjectsPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {projectsQuery.data.data.map((project) => (
-                <tr key={project.id}>
+                <tr className="transition-colors hover:bg-muted/40" key={project.id}>
                   <td className="px-4 py-3">
                     <p className="font-medium">{project.name}</p>
                     <p className="text-sm text-muted-foreground">
@@ -269,7 +269,7 @@ function ProjectDialog({
           <Label htmlFor="project-name">Name</Label>
           <Input className="mt-2" id="project-name" {...form.register('name')} />
           {form.formState.errors.name ? (
-            <p className="mt-1 text-sm text-red-600">
+            <p className="mt-1 text-sm text-destructive">
               {form.formState.errors.name.message}
             </p>
           ) : null}
@@ -277,12 +277,12 @@ function ProjectDialog({
         <div>
           <Label htmlFor="project-description">Description</Label>
           <textarea
-            className="mt-2 min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="mt-2 min-h-24 w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm transition-colors focus-visible:border-primary"
             id="project-description"
             {...form.register('description')}
           />
           {form.formState.errors.description ? (
-            <p className="mt-1 text-sm text-red-600">
+            <p className="mt-1 text-sm text-destructive">
               {form.formState.errors.description.message}
             </p>
           ) : null}

@@ -226,7 +226,7 @@ export function ReportForm({
             label="Project"
           >
             <select
-              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              className="h-10 w-full rounded-md border border-input bg-card px-3 text-sm shadow-sm transition-colors focus-visible:border-primary"
               disabled={projects.length === 0}
               {...form.register('projectId')}
             >
@@ -244,7 +244,7 @@ export function ReportForm({
             label="Notes"
           >
             <textarea
-              className="min-h-28 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              className="min-h-28 w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm transition-colors focus-visible:border-primary"
               {...form.register('notes')}
             />
           </FormField>
@@ -279,7 +279,7 @@ export function ReportForm({
             </Button>
           </div>
           {form.formState.errors.tasks?.root?.message ? (
-            <p className="text-sm text-red-600">
+              <p className="text-sm text-destructive">
               {form.formState.errors.tasks.root.message}
             </p>
           ) : null}
@@ -287,7 +287,7 @@ export function ReportForm({
         <CardContent className="space-y-4">
           {tasks.fields.map((field, index) => (
             <div
-              className="grid gap-4 rounded-md border border-border bg-slate-50 p-4 lg:grid-cols-4"
+              className="grid gap-4 rounded-lg border border-border bg-muted/40 p-4 lg:grid-cols-4"
               key={field.id}
             >
               <FormField
@@ -299,7 +299,7 @@ export function ReportForm({
               </FormField>
               <FormField label="Priority">
                 <select
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  className="h-10 w-full rounded-md border border-input bg-card px-3 text-sm shadow-sm transition-colors focus-visible:border-primary"
                   {...form.register(`tasks.${index}.priority`)}
                 >
                   {taskPriorities.map((priority) => (
@@ -311,7 +311,7 @@ export function ReportForm({
               </FormField>
               <FormField label="Status">
                 <select
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  className="h-10 w-full rounded-md border border-input bg-card px-3 text-sm shadow-sm transition-colors focus-visible:border-primary"
                   {...form.register(`tasks.${index}.status`)}
                 >
                   {taskStatuses.map((status) => (
@@ -450,7 +450,7 @@ export function ReportForm({
             </div>
           </div>
           {typeof form.formState.errors.blockers?.message === 'string' ? (
-            <p className="text-sm text-red-600">
+              <p className="text-sm text-destructive">
               {form.formState.errors.blockers.message}
             </p>
           ) : null}
@@ -460,7 +460,7 @@ export function ReportForm({
             <p className="text-sm text-muted-foreground">No blockers added.</p>
           ) : null}
           {blockers.fields.map((field, index) => (
-            <div className="rounded-md border border-border bg-slate-50 p-4" key={field.id}>
+            <div className="rounded-lg border border-border bg-muted/40 p-4" key={field.id}>
               <FormField
                 error={form.formState.errors.blockers?.[index]?.description?.message}
                 label="Description"
@@ -516,7 +516,7 @@ export function ReportForm({
             </div>
           </div>
           {typeof form.formState.errors.achievements?.message === 'string' ? (
-            <p className="text-sm text-red-600">
+              <p className="text-sm text-destructive">
               {form.formState.errors.achievements.message}
             </p>
           ) : null}
@@ -526,7 +526,7 @@ export function ReportForm({
             <p className="text-sm text-muted-foreground">No achievements added.</p>
           ) : null}
           {achievements.fields.map((field, index) => (
-            <div className="rounded-md border border-border bg-slate-50 p-4" key={field.id}>
+            <div className="rounded-lg border border-border bg-muted/40 p-4" key={field.id}>
               <FormField
                 error={
                   form.formState.errors.achievements?.[index]?.description
@@ -573,10 +573,10 @@ export function ReportForm({
         </CardHeader>
         <CardContent className="space-y-3">
           {timeEntries.fields.map((field, index) => (
-            <div className="grid gap-4 rounded-md border border-border bg-slate-50 p-4 sm:grid-cols-[1fr_1fr_auto]" key={field.id}>
+            <div className="grid gap-4 rounded-lg border border-border bg-muted/40 p-4 sm:grid-cols-[1fr_1fr_auto]" key={field.id}>
               <FormField label="Type">
                 <select
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  className="h-10 w-full rounded-md border border-input bg-card px-3 text-sm shadow-sm transition-colors focus-visible:border-primary"
                   {...form.register(`timeEntries.${index}.type`)}
                 >
                   {timeEntryTypes.map((type) => (
@@ -627,7 +627,7 @@ export function ReportForm({
         response={assistantResponse}
       />
 
-      <div className="sticky bottom-0 flex justify-end border-t border-border bg-slate-50 py-4">
+      <div className="sticky bottom-0 flex justify-end border-t border-border bg-background/95 py-4 backdrop-blur">
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? (
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -652,6 +652,7 @@ function AiActionButton({
 }) {
   return (
     <Button
+      className="border-indigo-200 bg-indigo-50/70 text-primary hover:border-indigo-300 hover:bg-indigo-100"
       type="button"
       variant="outline"
       disabled={disabled || isBusy}
@@ -705,7 +706,7 @@ function AiSuggestionDialog({
 
         {response ? (
           <>
-            <div className="rounded-md border border-border bg-slate-50 p-4">
+            <div className="rounded-lg border border-border bg-muted/40 p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 AI suggestion
               </p>
@@ -756,7 +757,7 @@ function FormField({
     <div className={className}>
       <Label>{label}</Label>
       <div className="mt-2">{children}</div>
-      {error ? <p className="mt-1 text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="mt-1 text-sm text-destructive">{error}</p> : null}
     </div>
   );
 }
@@ -811,7 +812,7 @@ function RepeatableTextSection({
         ) : null}
         {fields.map((field, index) => (
           <div
-            className="grid gap-3 rounded-md border border-border bg-slate-50 p-4 sm:grid-cols-[1fr_auto]"
+            className="grid gap-3 rounded-lg border border-border bg-muted/40 p-4 sm:grid-cols-[1fr_auto]"
             key={field.id}
           >
             <FormField error={getError(index)} label={label}>

@@ -58,7 +58,7 @@ Backend environment variables:
 ```env
 DATABASE_URL="postgresql://user:password@localhost:5432/mydb"
 JWT_ACCESS_SECRET="replace-with-a-real-secret"
-JWT_ACCESS_EXPIRES_IN="15m"
+JWT_ACCESS_EXPIRES_IN="8h"
 NODE_ENV=production
 PORT=3000
 FRONTEND_URL="https://your-frontend.example.com"

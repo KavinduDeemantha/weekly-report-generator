@@ -56,7 +56,7 @@ export function SubmissionStatusChart({
       <div className="grid gap-2 sm:grid-cols-2">
         {data.map((item) => (
           <div
-            className="flex items-center justify-between rounded-md border border-border bg-slate-50 px-3 py-2"
+            className="flex items-center justify-between rounded-lg border border-border bg-muted/40 px-3 py-2"
             key={item.user.id}
           >
             <span className="text-sm font-medium">{item.user.name}</span>

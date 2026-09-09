@@ -16,24 +16,30 @@ export function TaskTrendsChart({ data }: { data: TaskTrendItem[] }) {
     <div className="h-72 w-full">
       <ResponsiveContainer>
         <LineChart data={data} margin={{ left: 8, right: 16, top: 16, bottom: 8 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+          <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
           <XAxis
             dataKey="weekStart"
             tickFormatter={formatWeek}
             tickLine={false}
             axisLine={false}
             fontSize={12}
+            stroke={chartPalette.slate}
           />
-          <YAxis allowDecimals={false} tickLine={false} axisLine={false} fontSize={12} />
+          <YAxis allowDecimals={false} tickLine={false} axisLine={false} fontSize={12} stroke={chartPalette.slate} />
           <Tooltip
+            contentStyle={{
+              border: '1px solid #E2E8F0',
+              borderRadius: 10,
+              boxShadow: '0 8px 24px rgb(15 23 42 / 0.08)',
+            }}
             formatter={(value) => [value, 'Completed tasks']}
             labelFormatter={(label) => `Week of ${formatWeek(String(label))}`}
           />
           <Line
             type="monotone"
             dataKey="completedTasks"
-            stroke={chartPalette.blue}
-            strokeWidth={2}
+            stroke={chartPalette.indigo}
+            strokeWidth={3}
             dot={{ r: 3 }}
             activeDot={{ r: 5 }}
           />

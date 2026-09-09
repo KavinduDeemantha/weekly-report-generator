@@ -95,7 +95,7 @@ export function ReportDetailPage() {
       <div className="flex flex-wrap gap-2">
         {canEdit ? (
           <Link
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-muted"
             to={`/reports/${report.id}/edit`}
           >
             <Pencil className="h-4 w-4" aria-hidden="true" />
@@ -123,7 +123,7 @@ export function ReportDetailPage() {
           </Button>
         ) : null}
         <Link
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted"
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-muted"
           to={`/reports/${report.id}/versions`}
         >
           <History className="h-4 w-4" aria-hidden="true" />

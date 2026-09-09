@@ -52,10 +52,10 @@ export function ManagerReportsPage() {
         </p>
       </div>
 
-      <div className="grid gap-3 rounded-lg border border-border bg-background p-4 lg:grid-cols-5">
+      <div className="grid gap-3 rounded-xl border border-border bg-card p-4 shadow-soft lg:grid-cols-5">
         <select
           aria-label="Filter by status"
-          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+          className="h-10 rounded-md border border-input bg-card px-3 text-sm shadow-sm transition-colors focus-visible:border-primary"
           value={filters.status ?? ''}
           onChange={(event) =>
             updateFilters({
@@ -74,7 +74,7 @@ export function ManagerReportsPage() {
         </select>
         <select
           aria-label="Filter by team member"
-          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+          className="h-10 rounded-md border border-input bg-card px-3 text-sm shadow-sm transition-colors focus-visible:border-primary"
           disabled={usersQuery.isLoading}
           value={filters.userId ?? ''}
           onChange={(event) =>
@@ -92,7 +92,7 @@ export function ManagerReportsPage() {
         </select>
         <select
           aria-label="Filter by project"
-          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+          className="h-10 rounded-md border border-input bg-card px-3 text-sm shadow-sm transition-colors focus-visible:border-primary"
           disabled={projectsQuery.isLoading}
           value={filters.projectId ?? ''}
           onChange={(event) =>
@@ -141,10 +141,10 @@ export function ManagerReportsPage() {
       ) : null}
 
       {reportsQuery.data && reportsQuery.data.data.length > 0 ? (
-        <div className="overflow-hidden rounded-lg border border-border bg-background">
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-soft">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[980px] text-left text-sm">
-              <thead className="border-b border-border bg-slate-50 text-xs uppercase text-muted-foreground">
+              <thead className="border-b border-border bg-muted/70 text-xs uppercase text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3 font-medium">Member</th>
                   <th className="px-4 py-3 font-medium">Project</th>
@@ -157,7 +157,7 @@ export function ManagerReportsPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {reportsQuery.data.data.map((report) => (
-                  <tr key={report.id}>
+                  <tr className="transition-colors hover:bg-muted/40" key={report.id}>
                     <td className="px-4 py-3">
                       <p className="font-medium">{report.user?.name ?? 'Unknown'}</p>
                       <p className="text-xs text-muted-foreground">

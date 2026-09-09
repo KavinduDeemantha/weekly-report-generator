@@ -40,10 +40,10 @@ export function ManagerUsersPage() {
       ) : null}
 
       {usersQuery.data && usersQuery.data.data.length > 0 ? (
-        <div className="overflow-hidden rounded-lg border border-border bg-background">
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-soft">
           <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-left text-sm">
-            <thead className="border-b border-border bg-slate-50 text-xs uppercase text-muted-foreground">
+            <thead className="border-b border-border bg-muted/70 text-xs uppercase text-muted-foreground">
               <tr>
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Email</th>
@@ -53,7 +53,7 @@ export function ManagerUsersPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {usersQuery.data.data.map((user) => (
-                <tr key={user.id}>
+                <tr className="transition-colors hover:bg-muted/40" key={user.id}>
                   <td className="px-4 py-3 font-medium">{user.name}</td>
                   <td className="px-4 py-3">{user.email}</td>
                   <td className="px-4 py-3">

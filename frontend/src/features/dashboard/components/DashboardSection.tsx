@@ -26,7 +26,7 @@ export function DashboardSection({
   title,
 }: DashboardSectionProps) {
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         {description ? <CardDescription>{description}</CardDescription> : null}
@@ -35,7 +35,7 @@ export function DashboardSection({
         {isLoading ? <PageLoading label={`Loading ${title.toLowerCase()}`} /> : null}
         {error ? <ErrorState message={getErrorMessage(error)} /> : null}
         {!isLoading && !error && isEmpty ? (
-          <div className="flex min-h-48 items-center justify-center rounded-md border border-dashed border-border bg-slate-50 p-6 text-center text-sm text-muted-foreground">
+          <div className="flex min-h-48 items-center justify-center rounded-lg border border-dashed border-border bg-muted/40 p-6 text-center text-sm text-muted-foreground">
             No dashboard data for the selected filters.
           </div>
         ) : null}

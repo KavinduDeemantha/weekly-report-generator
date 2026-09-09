@@ -38,10 +38,10 @@ export function ReportVersionsPage() {
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-border bg-background">
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-soft">
         <div className="overflow-x-auto">
         <table className="w-full min-w-[680px] text-left text-sm">
-          <thead className="border-b border-border bg-slate-50 text-xs uppercase text-muted-foreground">
+          <thead className="border-b border-border bg-muted/70 text-xs uppercase text-muted-foreground">
             <tr>
               <th className="px-4 py-3 font-medium">Version</th>
               <th className="px-4 py-3 font-medium">Created</th>
@@ -52,7 +52,7 @@ export function ReportVersionsPage() {
           </thead>
           <tbody className="divide-y divide-border">
             {(versionsQuery.data ?? []).map((version) => (
-              <tr key={version.versionNumber}>
+              <tr className="transition-colors hover:bg-muted/40" key={version.versionNumber}>
                 <td className="px-4 py-3 font-medium">
                   Version {version.versionNumber}
                 </td>

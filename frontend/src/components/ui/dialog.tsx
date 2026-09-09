@@ -47,15 +47,15 @@ export function Dialog({
       aria-describedby={description ? descriptionId : undefined}
       aria-labelledby={titleId}
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 py-6"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6"
       role="dialog"
       onMouseDown={onClose}
     >
       <div
-        className="max-h-[calc(100vh-3rem)] w-full max-w-lg overflow-y-auto rounded-lg border border-border bg-background shadow-lg"
+        className="max-h-[calc(100vh-3rem)] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white text-foreground shadow-2xl shadow-slate-950/20"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-border p-5">
+        <div className="flex items-start justify-between gap-4 border-b border-border bg-white p-5">
           <div>
             <h2
               className="text-lg font-semibold tracking-normal"

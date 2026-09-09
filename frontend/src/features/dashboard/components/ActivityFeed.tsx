@@ -26,10 +26,10 @@ export function ActivityFeed({ data }: { data: DashboardActivityItem[] }) {
 
         return (
           <div
-            className="flex gap-3 rounded-md border border-border bg-slate-50 p-3"
+            className="flex gap-3 rounded-lg border border-border bg-muted/40 p-3 transition-colors hover:bg-muted/70"
             key={`${item.type}-${item.reportId}-${item.createdAt}`}
           >
-            <div className="mt-1 flex h-8 w-8 flex-none items-center justify-center rounded-md bg-background text-primary">
+            <div className="mt-1 flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-indigo-50 text-primary">
               <Icon className="h-4 w-4" aria-hidden="true" />
             </div>
             <div className="min-w-0 flex-1">
@@ -39,7 +39,7 @@ export function ActivityFeed({ data }: { data: DashboardActivityItem[] }) {
                   {formatDateTime(item.createdAt)}
                 </span>
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">{item.message}</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">{item.message}</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {item.user.name} · {item.project.name}
               </p>

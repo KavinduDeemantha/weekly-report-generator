@@ -62,7 +62,7 @@ export function RegisterPage() {
             {...form.register('name')}
           />
           {form.formState.errors.name ? (
-            <p className="text-sm text-red-600">
+            <p className="text-sm text-destructive">
               {form.formState.errors.name.message}
             </p>
           ) : null}
@@ -78,7 +78,7 @@ export function RegisterPage() {
             {...form.register('email')}
           />
           {form.formState.errors.email ? (
-            <p className="text-sm text-red-600">
+            <p className="text-sm text-destructive">
               {form.formState.errors.email.message}
             </p>
           ) : null}
@@ -94,7 +94,7 @@ export function RegisterPage() {
             {...form.register('password')}
           />
           {form.formState.errors.password ? (
-            <p className="text-sm text-red-600">
+            <p className="text-sm text-destructive">
               {form.formState.errors.password.message}
             </p>
           ) : null}
@@ -110,7 +110,7 @@ export function RegisterPage() {
             {...form.register('confirmPassword')}
           />
           {form.formState.errors.confirmPassword ? (
-            <p className="text-sm text-red-600">
+            <p className="text-sm text-destructive">
               {form.formState.errors.confirmPassword.message}
             </p>
           ) : null}

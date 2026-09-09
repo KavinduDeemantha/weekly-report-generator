@@ -25,7 +25,7 @@ export function TimeDistributionChart({
     <div className="h-72 w-full">
       <ResponsiveContainer>
         <BarChart data={chartData} margin={{ left: 8, right: 16, top: 16, bottom: 32 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
           <XAxis
             dataKey="label"
             tickLine={false}
@@ -34,10 +34,18 @@ export function TimeDistributionChart({
             angle={-15}
             textAnchor="end"
             height={48}
+            stroke={chartPalette.slate}
           />
-          <YAxis tickLine={false} axisLine={false} fontSize={12} />
-          <Tooltip formatter={(value) => [`${value}h`, 'Hours']} />
-          <Bar dataKey="hours" fill={chartPalette.amber} radius={[4, 4, 0, 0]} />
+          <YAxis tickLine={false} axisLine={false} fontSize={12} stroke={chartPalette.slate} />
+          <Tooltip
+            contentStyle={{
+              border: '1px solid #E2E8F0',
+              borderRadius: 10,
+              boxShadow: '0 8px 24px rgb(15 23 42 / 0.08)',
+            }}
+            formatter={(value) => [`${value}h`, 'Hours']}
+          />
+          <Bar dataKey="hours" fill={chartPalette.amber} radius={[5, 5, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>

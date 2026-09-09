@@ -14,7 +14,7 @@ import { SafeUser } from '../users/users.types.js';
 import { UsersService } from '../users/users.service.js';
 
 const BCRYPT_SALT_ROUNDS = 12;
-const DEFAULT_ACCESS_TOKEN_EXPIRES_IN = '15m';
+const DEFAULT_ACCESS_TOKEN_EXPIRES_IN = '8h';
 
 @Injectable()
 export class AuthService {
@@ -110,15 +110,15 @@ export class AuthService {
   }
 }
 
-function parseDurationMs(value: string): number {
+export function parseDurationMs(value: string): number {
   const match = value.trim().match(/^(\d+)(ms|s|m|h|d)?$/);
 
   if (!match) {
-    return 15 * 60 * 1000;
+    return 8 * 60 * 60 * 1000;
   }
 
   const amount = Number(match[1]);
-  const unit = match[2] ?? 'ms';
+  const unit = match[2] ?? 's';
 
   switch (unit) {
     case 'd':

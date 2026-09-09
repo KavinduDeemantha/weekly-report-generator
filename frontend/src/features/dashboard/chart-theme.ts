@@ -1,16 +1,17 @@
 export const chartPalette = {
-  blue: '#2563eb',
+  indigo: '#4F46E5',
+  cyan: '#0891B2',
+  blue: '#4F46E5',
   green: '#16a34a',
   amber: '#d97706',
   red: '#dc2626',
   slate: '#64748b',
-  violet: '#7c3aed',
 };
 
 export const categoricalColors = [
-  chartPalette.blue,
+  chartPalette.indigo,
+  chartPalette.cyan,
   chartPalette.green,
   chartPalette.amber,
-  chartPalette.violet,
   chartPalette.slate,
 ];

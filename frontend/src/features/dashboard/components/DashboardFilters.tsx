@@ -54,11 +54,11 @@ export function DashboardFilters({
   }
 
   return (
-    <div className="rounded-lg border border-border bg-background p-4">
+    <div className="rounded-xl border border-border bg-card p-4 shadow-soft">
       <div className="mb-4">
         <div
           aria-label="Dashboard date filter mode"
-          className="inline-flex rounded-md border border-border bg-slate-50 p-1"
+          className="inline-flex rounded-lg border border-border bg-muted p-1"
           role="group"
         >
           <button
@@ -151,7 +151,7 @@ export function DashboardFilters({
         <div>
           <Label htmlFor="dashboard-user">Team member</Label>
           <select
-            className="mt-2 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            className="mt-2 h-10 w-full rounded-md border border-input bg-card px-3 text-sm shadow-sm transition-colors focus-visible:border-primary"
             disabled={usersQuery.isLoading}
             id="dashboard-user"
             value={draft.userId ?? ''}
@@ -175,7 +175,7 @@ export function DashboardFilters({
         <div>
           <Label htmlFor="dashboard-project">Project</Label>
           <select
-            className="mt-2 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            className="mt-2 h-10 w-full rounded-md border border-input bg-card px-3 text-sm shadow-sm transition-colors focus-visible:border-primary"
             disabled={projectsQuery.isLoading}
             id="dashboard-project"
             value={draft.projectId ?? ''}
@@ -196,7 +196,7 @@ export function DashboardFilters({
         </div>
       </div>
       {dateError ? (
-        <p className="mt-3 text-sm text-red-600" id="dashboard-date-error">
+        <p className="mt-3 text-sm text-destructive" id="dashboard-date-error">
           {dateError}
         </p>
       ) : null}
@@ -280,9 +280,9 @@ function cleanFilters(filters: DashboardFilters): DashboardFilters {
 
 function getModeButtonClass(isSelected: boolean) {
   return [
-    'rounded-sm px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+    'rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
     isSelected
-      ? 'bg-background text-foreground shadow-sm'
+      ? 'bg-card text-primary shadow-sm ring-1 ring-border'
       : 'text-muted-foreground hover:text-foreground',
   ].join(' ');
 }

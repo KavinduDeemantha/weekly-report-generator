@@ -47,7 +47,7 @@ export function ReportsPage() {
           </p>
         </div>
         <Link
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-blue-700"
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary-strong"
           to="/reports/new"
         >
           <PlusCircle className="h-4 w-4" aria-hidden="true" />
@@ -55,10 +55,10 @@ export function ReportsPage() {
         </Link>
       </div>
 
-      <div className="grid gap-3 rounded-lg border border-border bg-background p-4 md:grid-cols-4">
+      <div className="grid gap-3 rounded-xl border border-border bg-card p-4 shadow-soft md:grid-cols-4">
         <select
           aria-label="Filter by status"
-          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+          className="h-10 rounded-md border border-input bg-card px-3 text-sm shadow-sm transition-colors focus-visible:border-primary"
           value={filters.status ?? ''}
           onChange={(event) =>
             updateFilters({
@@ -77,7 +77,7 @@ export function ReportsPage() {
         </select>
         <select
           aria-label="Filter by project"
-          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+          className="h-10 rounded-md border border-input bg-card px-3 text-sm shadow-sm transition-colors focus-visible:border-primary"
           disabled={projectsQuery.isLoading}
           value={filters.projectId ?? ''}
           onChange={(event) =>
@@ -126,10 +126,10 @@ export function ReportsPage() {
       ) : null}
 
       {reportsQuery.data && reportsQuery.data.data.length > 0 ? (
-        <div className="overflow-hidden rounded-lg border border-border bg-background">
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-soft">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[820px] text-left text-sm">
-              <thead className="border-b border-border bg-slate-50 text-xs uppercase text-muted-foreground">
+              <thead className="border-b border-border bg-muted/70 text-xs uppercase text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3 font-medium">Week</th>
                   <th className="px-4 py-3 font-medium">Project</th>
@@ -144,7 +144,7 @@ export function ReportsPage() {
                   const canEdit = canEditReportStatus(report.status);
 
                   return (
-                    <tr key={report.id}>
+                    <tr className="transition-colors hover:bg-muted/40" key={report.id}>
                       <td className="px-4 py-3 font-medium">
                         {formatDate(report.weekStart)} to{' '}
                         {formatDate(report.weekEnd)}
