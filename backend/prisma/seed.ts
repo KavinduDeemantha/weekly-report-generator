@@ -109,23 +109,10 @@ async function main() {
     },
   });
 
-  const seededWeekStarts = [
-    '2026-08-03',
-    '2026-08-10',
-    '2026-08-17',
-    '2026-08-24',
-    '2026-08-31',
-    '2026-09-07',
-    '2026-09-14',
-  ].map((date) => new Date(`${date}T00:00:00.000Z`));
-
   await prisma.report.deleteMany({
     where: {
       userId: {
         in: members.map((member) => member.id),
-      },
-      weekStart: {
-        in: seededWeekStarts,
       },
     },
   });
@@ -150,13 +137,13 @@ async function main() {
     userId: members[0].id,
     projectId: clientPortal.id,
     weekStart: '2026-09-07',
-    weekEnd: '2026-09-13',
+    weekEnd: '2026-09-09',
     status: 'SUBMITTED',
     currentVersion: 1,
     versions: [
       {
         versionNumber: 1,
-        submittedAt: new Date('2026-09-13T09:00:00.000Z'),
+        submittedAt: new Date('2026-09-09T09:00:00.000Z'),
         notes: 'Submitted client portal progress.',
         tasks: [
           {
@@ -199,13 +186,13 @@ async function main() {
     userId: members[1].id,
     projectId: internalTooling.id,
     weekStart: '2026-09-07',
-    weekEnd: '2026-09-13',
+    weekEnd: '2026-09-09',
     status: 'APPROVED',
     currentVersion: 1,
     versions: [
       {
         versionNumber: 1,
-        submittedAt: new Date('2026-09-13T10:00:00.000Z'),
+        submittedAt: new Date('2026-09-09T10:00:00.000Z'),
         notes: 'Approved internal tooling progress.',
         tasks: [
           {
@@ -246,13 +233,13 @@ async function main() {
     userId: members[2].id,
     projectId: research.id,
     weekStart: '2026-09-07',
-    weekEnd: '2026-09-13',
+    weekEnd: '2026-09-09',
     status: 'NEEDS_CORRECTION',
     currentVersion: 1,
     versions: [
       {
         versionNumber: 1,
-        submittedAt: new Date('2026-09-13T11:00:00.000Z'),
+        submittedAt: new Date('2026-09-09T11:00:00.000Z'),
         notes: 'Research report needing correction.',
         tasks: [
           {
@@ -306,7 +293,7 @@ async function main() {
     userId: members[3].id,
     projectId: clientPortal.id,
     weekStart: '2026-09-07',
-    weekEnd: '2026-09-13',
+    weekEnd: '2026-09-09',
     status: 'DRAFT',
     currentVersion: 1,
     versions: [
@@ -337,14 +324,14 @@ async function main() {
   await createSeedReport({
     userId: members[1].id,
     projectId: internalTooling.id,
-    weekStart: '2026-09-14',
-    weekEnd: '2026-09-20',
+    weekStart: '2026-08-31',
+    weekEnd: '2026-09-06',
     status: 'SUBMITTED',
     currentVersion: 2,
     versions: [
       {
         versionNumber: 1,
-        submittedAt: new Date('2026-09-20T09:00:00.000Z'),
+        submittedAt: new Date('2026-09-06T09:00:00.000Z'),
         notes: 'Original dashboard metrics implementation.',
         tasks: [
           {
@@ -366,7 +353,7 @@ async function main() {
       },
       {
         versionNumber: 2,
-        submittedAt: new Date('2026-09-21T09:00:00.000Z'),
+        submittedAt: new Date('2026-09-07T09:00:00.000Z'),
         notes: 'Corrected dashboard metrics implementation.',
         tasks: [
           {

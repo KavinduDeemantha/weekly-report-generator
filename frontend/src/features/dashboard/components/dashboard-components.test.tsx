@@ -8,6 +8,7 @@ import { userKeys } from '../../users/query-keys';
 import { ActivityFeed } from './ActivityFeed';
 import { DashboardFilters } from './DashboardFilters';
 import { DashboardSection } from './DashboardSection';
+import { SubmissionStatusChart } from './SubmissionStatusChart';
 import { SummaryCards } from './SummaryCards';
 
 function renderWithProviders(
@@ -38,7 +39,7 @@ describe('dashboard components', () => {
       />,
     );
 
-    expect(screen.getByText('Total Reports Submitted')).toBeInTheDocument();
+    expect(screen.getByText('Submitted Reports')).toBeInTheDocument();
     expect(screen.getByText('75%')).toBeInTheDocument();
     expect(screen.getByText('Open Blockers')).toBeInTheDocument();
   });
@@ -98,6 +99,47 @@ describe('dashboard components', () => {
 
     expect(screen.getByText('Changes requested')).toBeInTheDocument();
     expect(screen.getByText('Sunil Silva · Client Portal')).toBeInTheDocument();
+  });
+
+  it('renders submission status as a categorical member list', () => {
+    renderWithProviders(
+      <SubmissionStatusChart
+        data={[
+          {
+            user: {
+              id: 'user-approved',
+              name: 'Priya Jayawardena',
+              email: 'priya@example.com',
+            },
+            status: 'APPROVED',
+            report: {
+              id: 'report-approved',
+              weekStart: '2026-09-07T00:00:00.000Z',
+              project: { id: 'project-1', name: 'Client Portal' },
+            },
+          },
+          {
+            user: {
+              id: 'user-not-started',
+              name: 'Kamal Silva',
+              email: 'kamal@example.com',
+            },
+            status: 'NOT_STARTED',
+            report: null,
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText('Priya Jayawardena')).toBeInTheDocument();
+    expect(screen.getByText('approved')).toBeInTheDocument();
+    expect(screen.getByText('Kamal Silva')).toBeInTheDocument();
+    expect(screen.getAllByText('Not started')).toHaveLength(2);
+    expect(screen.getByText('Client Portal')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /view report/i })).toHaveAttribute(
+      'href',
+      '/manager/reports/report-approved',
+    );
   });
 
   it('defaults to single week mode and shows only the week input', () => {

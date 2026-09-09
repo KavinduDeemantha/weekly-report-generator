@@ -315,8 +315,65 @@ describe('Manager Dashboard Analytics (e2e)', () => {
           email: noReportEmail(),
         },
         status: 'NOT_STARTED',
+        report: null,
       },
     ]);
+  });
+
+  it('summary respects date range filters instead of falling back to the current week', async () => {
+    const response = await request(app.getHttpServer())
+      .get(
+        `/dashboard/summary?from=2028-02-14&to=2028-02-20&userId=${submittedUserId}&projectId=${otherProjectId}`,
+      )
+      .set('Cookie', managerCookie)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      totalReportsSubmitted: 1,
+      submissionComplianceRate: 100,
+      pendingCount: 0,
+      needsCorrectionCount: 0,
+      openBlockersCount: 0,
+    });
+  });
+
+  it('submission status returns approved report context for the selected range', async () => {
+    const response = await request(app.getHttpServer())
+      .get(
+        `/dashboard/submission-status?from=2028-02-01&to=2028-02-28&userId=${approvedUserId}&projectId=${projectId}`,
+      )
+      .set('Cookie', managerCookie)
+      .expect(200);
+
+    expect(response.body).toEqual([
+      {
+        user: {
+          id: approvedUserId,
+          name: 'Dashboard Approved',
+          email: approvedEmail(),
+        },
+        status: 'APPROVED',
+        report: {
+          id: expect.any(String),
+          weekStart: '2028-02-07T00:00:00.000Z',
+          project: {
+            id: projectId,
+            name: `${marker} Main Project`,
+          },
+        },
+      },
+    ]);
+  });
+
+  it('resubmitted multi-version reports count once in submitted totals', async () => {
+    const response = await request(app.getHttpServer())
+      .get(
+        `/dashboard/summary?weekStart=${weekStart}&userId=${approvedUserId}&projectId=${projectId}`,
+      )
+      .set('Cookie', managerCookie)
+      .expect(200);
+
+    expect(response.body.totalReportsSubmitted).toBe(1);
   });
 
   it('task trends count completed tasks from current versions only', async () => {

@@ -6,8 +6,9 @@ import type { DashboardSummary } from '../../../types/dashboard';
 const cards = [
   {
     key: 'totalReportsSubmitted',
-    label: 'Total Reports Submitted',
-    description: 'Reports submitted by team members for the selected period.',
+    label: 'Submitted Reports',
+    description:
+      'Reports that have been submitted by team members for the selected reporting period.',
     icon: FileText,
     accent: 'border-t-primary text-primary bg-indigo-50',
   },

@@ -11,6 +11,7 @@ import { getErrorMessage } from '../../../api/errors';
 type DashboardSectionProps = {
   children: React.ReactNode;
   description?: string;
+  emptyMessage?: string;
   error?: unknown;
   isEmpty?: boolean;
   isLoading?: boolean;
@@ -20,6 +21,7 @@ type DashboardSectionProps = {
 export function DashboardSection({
   children,
   description,
+  emptyMessage = 'No dashboard data for the selected filters.',
   error,
   isEmpty,
   isLoading,
@@ -36,7 +38,7 @@ export function DashboardSection({
         {error ? <ErrorState message={getErrorMessage(error)} /> : null}
         {!isLoading && !error && isEmpty ? (
           <div className="flex min-h-48 items-center justify-center rounded-lg border border-dashed border-border bg-muted/40 p-6 text-center text-sm text-muted-foreground">
-            No dashboard data for the selected filters.
+            {emptyMessage}
           </div>
         ) : null}
         {!isLoading && !error && !isEmpty ? children : null}

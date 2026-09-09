@@ -79,19 +79,18 @@ type DateScope = {
   to?: Date;
 };
 
+type DateScopeOptions = {
+  defaultToCurrentWeek?: boolean;
+};
+
 @Injectable()
 export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getSummary(query: DashboardQueryDto): Promise<DashboardSummary> {
-    const weekStart = getSelectedWeekStart(query);
+    const scope = createDateScope(query, { defaultToCurrentWeek: true });
     const memberWhere = createMemberWhere(query);
-    const reportWhere = createReportWhere({
-      ...query,
-      weekStart: toDateInput(weekStart),
-      from: undefined,
-      to: undefined,
-    });
+    const reportWhere = createReportWhere(query, scope);
 
     const [members, reports, scopedReports] = await this.prisma.$transaction([
       this.prisma.user.findMany({
@@ -117,12 +116,13 @@ export class DashboardService {
       }),
     ]);
 
-    const reportsByUserId = new Map(reports.map((report) => [report.userId, report]));
-    const submittedCount = members.filter((member) => {
-      const report = reportsByUserId.get(member.id);
-      return report ? compliantStatuses.includes(report.status) : false;
-    }).length;
-    const pendingCount = members.length - submittedCount;
+    const submittedReports = reports.filter((report) =>
+      compliantStatuses.includes(report.status),
+    );
+    const compliantUserIds = new Set(
+      submittedReports.map((report) => report.userId),
+    );
+    const pendingCount = members.length - compliantUserIds.size;
     const needsCorrectionCount = reports.filter(
       (report) => report.status === ReportStatus.NEEDS_CORRECTION,
     ).length;
@@ -136,9 +136,11 @@ export class DashboardService {
     );
 
     return {
-      totalReportsSubmitted: submittedCount,
+      totalReportsSubmitted: submittedReports.length,
       submissionComplianceRate:
-        members.length === 0 ? 0 : roundPercentage((submittedCount / members.length) * 100),
+        members.length === 0
+          ? 0
+          : roundPercentage((compliantUserIds.size / members.length) * 100),
       pendingCount,
       needsCorrectionCount,
       openBlockersCount,
@@ -148,14 +150,9 @@ export class DashboardService {
   async getSubmissionStatus(
     query: DashboardQueryDto,
   ): Promise<SubmissionStatusItem[]> {
-    const weekStart = getSelectedWeekStart(query);
+    const scope = createDateScope(query, { defaultToCurrentWeek: true });
     const memberWhere = createMemberWhere(query);
-    const reportWhere = createReportWhere({
-      ...query,
-      weekStart: toDateInput(weekStart),
-      from: undefined,
-      to: undefined,
-    });
+    const reportWhere = createReportWhere(query, scope);
 
     const [members, reports] = await this.prisma.$transaction([
       this.prisma.user.findMany({
@@ -172,19 +169,48 @@ export class DashboardService {
           ...reportWhere,
           user: memberWhere,
         },
+        orderBy: [{ weekStart: 'desc' }, { createdAt: 'desc' }],
         select: {
+          id: true,
           userId: true,
           status: true,
+          weekStart: true,
+          project: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
       }),
     ]);
 
-    const reportsByUserId = new Map(reports.map((report) => [report.userId, report]));
+    const reportsByUserId = new Map<
+      string,
+      (typeof reports)[number]
+    >();
 
-    return members.map((member) => ({
-      user: member,
-      status: reportsByUserId.get(member.id)?.status ?? 'NOT_STARTED',
-    }));
+    for (const report of reports) {
+      if (!reportsByUserId.has(report.userId)) {
+        reportsByUserId.set(report.userId, report);
+      }
+    }
+
+    return members.map((member) => {
+      const report = reportsByUserId.get(member.id);
+
+      return {
+        user: member,
+        status: report?.status ?? 'NOT_STARTED',
+        report: report
+          ? {
+              id: report.id,
+              weekStart: report.weekStart,
+              project: report.project,
+            }
+          : null,
+      };
+    });
   }
 
   async getTaskTrends(query: DashboardQueryDto): Promise<TaskTrendItem[]> {
@@ -376,8 +402,10 @@ function createMemberWhere(query: DashboardQueryDto): Prisma.UserWhereInput {
   };
 }
 
-function createReportWhere(query: DashboardQueryDto): Prisma.ReportWhereInput {
-  const scope = createDateScope(query);
+function createReportWhere(
+  query: DashboardQueryDto,
+  scope = createDateScope(query),
+): Prisma.ReportWhereInput {
   const where: Prisma.ReportWhereInput = {
     userId: query.userId,
     projectId: query.projectId,
@@ -395,7 +423,10 @@ function createReportWhere(query: DashboardQueryDto): Prisma.ReportWhereInput {
   return where;
 }
 
-function createDateScope(query: DashboardQueryDto): DateScope {
+function createDateScope(
+  query: DashboardQueryDto,
+  options: DateScopeOptions = {},
+): DateScope {
   const weekInput = query.weekStart ?? query.week;
 
   if (weekInput && (query.from || query.to)) {
@@ -408,20 +439,16 @@ function createDateScope(query: DashboardQueryDto): DateScope {
     };
   }
 
+  if (!query.from && !query.to && options.defaultToCurrentWeek) {
+    return {
+      weekStart: getCurrentUtcWeekStart(),
+    };
+  }
+
   return {
     from: query.from ? parseBusinessDate(query.from, 'from') : undefined,
     to: query.to ? parseBusinessDate(query.to, 'to') : undefined,
   };
-}
-
-function getSelectedWeekStart(query: DashboardQueryDto): Date {
-  const weekInput = query.weekStart ?? query.week;
-
-  if (!weekInput) {
-    return getCurrentUtcWeekStart();
-  }
-
-  return parseBusinessDate(weekInput, 'weekStart');
 }
 
 function getCurrentUtcWeekStart(): Date {

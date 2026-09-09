@@ -17,6 +17,14 @@ export type SubmissionStatusItem = {
     email: string;
   };
   status: SubmissionDashboardStatus;
+  report: {
+    id: string;
+    weekStart: Date;
+    project: {
+      id: string;
+      name: string;
+    };
+  } | null;
 };
 
 export type TaskTrendItem = {
