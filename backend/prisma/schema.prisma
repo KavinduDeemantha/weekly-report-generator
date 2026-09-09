@@ -1,6 +1,6 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider               = "prisma-client"
+  output                 = "../src/generated/prisma"
   moduleFormat           = "esm"
   generatedFileExtension = "ts"
   importFileExtension    = "js"
@@ -57,8 +57,9 @@ model User {
   role         Role    @default(TEAM_MEMBER)
   isActive     Boolean @default(true)
 
-  reports Report[]
-  reviews Review[] @relation("ReviewerReviews")
+  reports        Report[]
+  reviews        Review[]        @relation("ReviewerReviews")
+  projectMembers ProjectMember[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -75,6 +76,7 @@ model Project {
   isActive    Boolean @default(true)
 
   reports Report[]
+  members ProjectMember[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -244,4 +246,21 @@ model Review {
   @@index([reportVersionId])
   @@index([reviewerId])
   @@map("reviews")
+}
+
+model ProjectMember {
+  id String @id @default(uuid()) @db.Uuid
+
+  projectId String @db.Uuid
+  userId    String @db.Uuid
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  assignedAt DateTime @default(now())
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+  @@map("project_members")
 }

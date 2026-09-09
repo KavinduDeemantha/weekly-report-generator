@@ -63,6 +63,13 @@ describe('Manager Review, Correction, Resubmission, and Version History (e2e)', 
       })
     ).id;
 
+    await prisma.projectMember.create({
+      data: {
+        projectId,
+        userId: memberId,
+      },
+    });
+
     managerCookie = await loginAndGetCookie(managerEmail());
     memberCookie = await loginAndGetCookie(memberEmail());
     secondMemberCookie = await loginAndGetCookie(secondMemberEmail());

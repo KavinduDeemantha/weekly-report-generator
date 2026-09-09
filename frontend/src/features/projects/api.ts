@@ -1,5 +1,5 @@
 import { apiClient } from '../../api/client';
-import type { PaginatedProjects, Project } from '../../types/projects';
+import type { PaginatedProjects, Project, ProjectMember } from '../../types/projects';
 import type { ProjectFormValues } from './schemas';
 
 export const projectsApi = {
@@ -36,6 +36,21 @@ export const projectsApi = {
 
   async deactivate(id: string) {
     const response = await apiClient.delete<Project>(`/projects/${id}`);
+    return response.data;
+  },
+
+  async listMembers(id: string) {
+    const response = await apiClient.get<ProjectMember[]>(
+      `/projects/${id}/members`,
+    );
+    return response.data;
+  },
+
+  async updateMembers(id: string, userIds: string[]) {
+    const response = await apiClient.put<ProjectMember[]>(
+      `/projects/${id}/members`,
+      { userIds },
+    );
     return response.data;
   },
 };

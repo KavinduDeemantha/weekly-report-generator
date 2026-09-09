@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Pencil, Plus, Power } from 'lucide-react';
-import { useState } from 'react';
+import { Pencil, Plus, Power, Users } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { getErrorMessage } from '../api/errors';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
@@ -18,12 +18,15 @@ import {
   type ProjectFormValues,
 } from '../features/projects/schemas';
 import type { Project } from '../types/projects';
+import { usersApi } from '../features/users/api';
+import { userKeys } from '../features/users/query-keys';
 
 export function ManagerProjectsPage() {
   const [page, setPage] = useState(1);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [deactivatingProject, setDeactivatingProject] =
     useState<Project | null>(null);
+  const [memberProject, setMemberProject] = useState<Project | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -31,6 +34,10 @@ export function ManagerProjectsPage() {
   const projectsQuery = useQuery({
     queryKey: projectKeys.list(filters),
     queryFn: () => projectsApi.list(filters),
+  });
+  const usersQuery = useQuery({
+    queryKey: userKeys.list({ page: 1, limit: 100 }),
+    queryFn: () => usersApi.list({ page: 1, limit: 100 }),
   });
 
   const createProject = useMutation({
@@ -123,6 +130,9 @@ export function ManagerProjectsPage() {
                     >
                       {project.isActive ? 'Active' : 'Inactive'}
                     </Badge>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {project.assignedMemberCount ?? 0} assigned members
+                    </p>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-2">
@@ -133,6 +143,15 @@ export function ManagerProjectsPage() {
                       >
                         <Pencil className="h-4 w-4" aria-hidden="true" />
                         Edit
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={!project.isActive}
+                        onClick={() => setMemberProject(project)}
+                      >
+                        <Users className="h-4 w-4" aria-hidden="true" />
+                        Members
                       </Button>
                       <Button
                         type="button"
@@ -231,7 +250,134 @@ export function ManagerProjectsPage() {
         onCancel={() => setDeactivatingProject(null)}
         onConfirm={() => void handleDeactivate()}
       />
+
+      <ProjectMembersDialog
+        isOpen={Boolean(memberProject)}
+        project={memberProject}
+        teamMembers={(usersQuery.data?.data ?? []).filter(
+          (user) => user.role === 'TEAM_MEMBER',
+        )}
+        onClose={() => {
+          setMemberProject(null);
+          setFormError(null);
+        }}
+        onSaved={async () => {
+          await invalidateProjectQueries(queryClient);
+          setMemberProject(null);
+        }}
+      />
     </section>
+  );
+}
+
+function ProjectMembersDialog({
+  isOpen,
+  onClose,
+  onSaved,
+  project,
+  teamMembers,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSaved: () => Promise<void>;
+  project: Project | null;
+  teamMembers: Array<{ id: string; name: string; email: string }>;
+}) {
+  const queryClient = useQueryClient();
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const membersQuery = useQuery({
+    queryKey: projectKeys.members(project?.id ?? ''),
+    queryFn: () => projectsApi.listMembers(project?.id ?? ''),
+    enabled: Boolean(project?.id) && isOpen,
+  });
+  const updateMembers = useMutation({
+    mutationFn: () => projectsApi.updateMembers(project?.id ?? '', selectedIds),
+    onSuccess: async () => {
+      if (project) {
+        await queryClient.invalidateQueries({
+          queryKey: projectKeys.members(project.id),
+        });
+      }
+      await onSaved();
+    },
+  });
+
+  useEffect(() => {
+    if (membersQuery.data) {
+      setSelectedIds(membersQuery.data.map((member) => member.id));
+    }
+  }, [membersQuery.data]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setError(null);
+    }
+  }, [isOpen]);
+
+  function toggleMember(userId: string) {
+    setSelectedIds((current) =>
+      current.includes(userId)
+        ? current.filter((id) => id !== userId)
+        : [...current, userId],
+    );
+  }
+
+  return (
+    <Dialog
+      description="Choose which team members can create reports for this project."
+      isOpen={isOpen}
+      title={project ? `Project members: ${project.name}` : 'Project members'}
+      onClose={onClose}
+    >
+      <div className="space-y-4">
+        {error ? <ErrorState message={error} /> : null}
+        {membersQuery.isLoading ? <PageLoading label="Loading project members" /> : null}
+        {membersQuery.isError ? (
+          <ErrorState message={getErrorMessage(membersQuery.error)} />
+        ) : null}
+        {!membersQuery.isLoading && !membersQuery.isError ? (
+          <div className="max-h-80 space-y-2 overflow-y-auto rounded-lg border border-border p-2">
+            {teamMembers.map((member) => (
+              <label
+                className="flex cursor-pointer items-start gap-3 rounded-md px-3 py-2 text-sm hover:bg-muted"
+                key={member.id}
+              >
+                <input
+                  className="mt-1"
+                  type="checkbox"
+                  checked={selectedIds.includes(member.id)}
+                  onChange={() => toggleMember(member.id)}
+                />
+                <span>
+                  <span className="block font-medium">{member.name}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {member.email}
+                  </span>
+                </span>
+              </label>
+            ))}
+          </div>
+        ) : null}
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            disabled={updateMembers.isPending || membersQuery.isLoading}
+            onClick={() => {
+              setError(null);
+              void updateMembers.mutateAsync().catch((saveError: unknown) => {
+                setError(getErrorMessage(saveError));
+              });
+            }}
+          >
+            Save members
+          </Button>
+        </div>
+      </div>
+    </Dialog>
   );
 }
 

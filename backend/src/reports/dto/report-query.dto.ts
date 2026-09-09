@@ -38,6 +38,14 @@ export class ReportQueryDto {
 
   @IsOptional()
   @IsDateString()
+  weekStart?: string;
+
+  @IsOptional()
+  @IsDateString()
+  week?: string;
+
+  @IsOptional()
+  @IsDateString()
   from?: string;
 
   @IsOptional()

@@ -164,7 +164,7 @@ export class ReportsService {
     const weekEnd = parseBusinessDate(dto.weekEnd, 'weekEnd');
     validateDateRange(weekStart, weekEnd);
     validateStructuredContent(dto);
-    await this.projectsService.ensureActiveProject(dto.projectId);
+    await this.projectsService.ensureAssignedActiveProject(dto.projectId, userId);
 
     try {
       const report = await this.prisma.$transaction(async (tx) => {
@@ -277,14 +277,10 @@ export class ReportsService {
         validateDateRange(weekStart, weekEnd);
 
         if (dto.projectId !== undefined) {
-          const project = await tx.project.findUnique({
-            where: { id: dto.projectId },
-            select: { id: true, isActive: true },
-          });
-
-          if (!project || !project.isActive) {
-            throw new NotFoundException('Active project not found');
-          }
+          await this.projectsService.ensureAssignedActiveProject(
+            dto.projectId,
+            userId,
+          );
         }
 
         const currentVersion = getCurrentVersion(existing);

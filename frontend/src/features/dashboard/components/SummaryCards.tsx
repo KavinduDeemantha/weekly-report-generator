@@ -1,7 +1,10 @@
 import { Activity, AlertTriangle, CheckCircle2, Clock, FileText } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import type { DashboardSummary } from '../../../types/dashboard';
+import { buildManagerReportsUrl } from '../drilldowns';
+import type { DashboardFilters } from '../types';
 
 const cards = [
   {
@@ -49,9 +52,11 @@ const cards = [
 
 export function SummaryCards({
   data,
+  filters,
   isLoading,
 }: {
   data?: DashboardSummary;
+  filters: DashboardFilters;
   isLoading: boolean;
 }) {
   const [openHelpKey, setOpenHelpKey] = useState<string | null>(null);
@@ -63,6 +68,11 @@ export function SummaryCards({
         const value = data?.[card.key] ?? 0;
         const isHelpOpen = openHelpKey === card.key;
         const helpId = `dashboard-summary-${card.key}-help`;
+
+        const href =
+          card.key === 'needsCorrectionCount'
+            ? buildManagerReportsUrl(filters, { status: 'NEEDS_CORRECTION' })
+            : null;
 
         return (
           <Card className={`border-t-4 ${card.accent.split(' ')[0]}`} key={card.key}>
@@ -100,10 +110,20 @@ export function SummaryCards({
               {isLoading ? (
                 <div className="h-8 w-20 animate-pulse rounded-md bg-muted" />
               ) : (
-                <p className="text-3xl font-semibold tracking-normal">
-                  {value}
-                  {'suffix' in card ? card.suffix : ''}
-                </p>
+                <div className="flex items-end justify-between gap-3">
+                  <p className="text-3xl font-semibold tracking-normal">
+                    {value}
+                    {'suffix' in card ? card.suffix : ''}
+                  </p>
+                  {href ? (
+                    <Link
+                      className="text-sm font-medium text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      to={href}
+                    >
+                      View reports
+                    </Link>
+                  ) : null}
+                </div>
               )}
             </CardContent>
           </Card>

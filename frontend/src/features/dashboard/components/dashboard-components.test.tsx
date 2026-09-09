@@ -8,6 +8,8 @@ import { userKeys } from '../../users/query-keys';
 import { ActivityFeed } from './ActivityFeed';
 import { DashboardFilters } from './DashboardFilters';
 import { DashboardSection } from './DashboardSection';
+import { ProjectDistributionChart } from './ProjectDistributionChart';
+import { ReportActivityTimeline } from '../../reports/components/ReportActivityTimeline';
 import { SubmissionStatusChart } from './SubmissionStatusChart';
 import { SummaryCards } from './SummaryCards';
 
@@ -29,6 +31,7 @@ describe('dashboard components', () => {
     renderWithProviders(
       <SummaryCards
         isLoading={false}
+        filters={{ weekStart: '2026-09-07' }}
         data={{
           totalReportsSubmitted: 3,
           submissionComplianceRate: 75,
@@ -48,6 +51,7 @@ describe('dashboard components', () => {
     renderWithProviders(
       <SummaryCards
         isLoading={false}
+        filters={{}}
         data={{
           totalReportsSubmitted: 3,
           submissionComplianceRate: 75,
@@ -67,6 +71,27 @@ describe('dashboard components', () => {
         'Active team members with a Draft report or no report for the selected week.',
       ),
     ).toBeInTheDocument();
+  });
+
+  it('generates a scoped needs correction drill-down URL', () => {
+    renderWithProviders(
+      <SummaryCards
+        isLoading={false}
+        filters={{ weekStart: '2026-09-07', projectId: 'project-1' }}
+        data={{
+          totalReportsSubmitted: 3,
+          submissionComplianceRate: 75,
+          pendingCount: 1,
+          needsCorrectionCount: 1,
+          openBlockersCount: 2,
+        }}
+      />,
+    );
+
+    expect(screen.getByRole('link', { name: 'View reports' })).toHaveAttribute(
+      'href',
+      '/manager/reports?weekStart=2026-09-07&projectId=project-1&status=NEEDS_CORRECTION',
+    );
   });
 
   it('renders an empty state for a chart section with no data', () => {
@@ -90,6 +115,8 @@ describe('dashboard components', () => {
             reportId: 'report-1',
             user: { id: 'user-1', name: 'Sunil Silva' },
             project: { id: 'project-1', name: 'Client Portal' },
+            versionNumber: 1,
+            reviewer: { id: 'manager-1', name: 'Review Manager' },
             createdAt: '2026-09-08T10:00:00.000Z',
             message: 'Changes were requested for Sunil Silva report',
           },
@@ -98,7 +125,9 @@ describe('dashboard components', () => {
     );
 
     expect(screen.getByText('Changes requested')).toBeInTheDocument();
-    expect(screen.getByText('Sunil Silva · Client Portal')).toBeInTheDocument();
+    expect(
+      screen.getByText('Sunil Silva - Client Portal - Version 1 - Reviewer: Review Manager'),
+    ).toBeInTheDocument();
   });
 
   it('renders submission status as a categorical member list', () => {
@@ -140,6 +169,98 @@ describe('dashboard components', () => {
       'href',
       '/manager/reports/report-approved',
     );
+  });
+
+  it('preserves project and date filters in project drill-down links', () => {
+    renderWithProviders(
+      <ProjectDistributionChart
+        filters={{ from: '2026-08-01', to: '2026-09-09', userId: 'user-1' }}
+        data={[
+          {
+            projectId: 'project-1',
+            projectName: 'Client Portal',
+            taskCount: 4,
+          },
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByRole('link', { name: /client portal 4 tasks/i }),
+    ).toHaveAttribute(
+      'href',
+      '/manager/reports?from=2026-08-01&to=2026-09-09&userId=user-1&projectId=project-1',
+    );
+  });
+
+  it('renders report activity in version-aware order', () => {
+    renderWithProviders(
+      <ReportActivityTimeline
+        report={{
+          id: 'report-1',
+          weekStart: '2026-09-07T00:00:00.000Z',
+          weekEnd: '2026-09-09T00:00:00.000Z',
+          status: 'APPROVED',
+          currentVersion: 2,
+          createdAt: '2026-09-07T08:00:00.000Z',
+          updatedAt: '2026-09-09T12:00:00.000Z',
+          project: { id: 'project-1', name: 'Client Portal' },
+          user: { id: 'user-1', name: 'Priya Jayawardena', email: 'priya@example.com' },
+          version: {
+            id: 'version-2',
+            versionNumber: 2,
+            notes: null,
+            submittedAt: '2026-09-09T10:00:00.000Z',
+            tasks: [],
+            nextWeekTasks: [],
+            blockers: [],
+            achievements: [],
+            timeEntries: [],
+            reviews: [],
+          },
+          reviews: [
+            {
+              id: 'review-1',
+              action: 'REQUEST_CHANGES',
+              comment: 'Clarify blocker.',
+              versionNumber: 1,
+              reviewer: { id: 'manager-1', name: 'Review Manager' },
+              createdAt: '2026-09-08T10:00:00.000Z',
+            },
+            {
+              id: 'review-2',
+              action: 'APPROVED',
+              comment: null,
+              versionNumber: 2,
+              reviewer: { id: 'manager-1', name: 'Review Manager' },
+              createdAt: '2026-09-09T11:00:00.000Z',
+            },
+          ],
+          latestCorrectionFeedback: null,
+          versionSummaries: [
+            {
+              versionNumber: 1,
+              createdAt: '2026-09-07T08:00:00.000Z',
+              submittedAt: '2026-09-08T09:00:00.000Z',
+              isCurrent: false,
+            },
+            {
+              versionNumber: 2,
+              createdAt: '2026-09-09T09:00:00.000Z',
+              submittedAt: '2026-09-09T10:00:00.000Z',
+              isCurrent: true,
+            },
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getByText('Draft created')).toBeInTheDocument();
+    expect(screen.getByText('Report submitted')).toBeInTheDocument();
+    expect(screen.getByText('Correction version created')).toBeInTheDocument();
+    expect(screen.getByText('Report resubmitted')).toBeInTheDocument();
+    expect(screen.getByText('Report approved')).toBeInTheDocument();
+    expect(screen.getByText('Clarify blocker.')).toBeInTheDocument();
   });
 
   it('defaults to single week mode and shows only the week input', () => {

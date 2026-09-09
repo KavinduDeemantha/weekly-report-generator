@@ -16,6 +16,12 @@ const userWithPasswordSelect = {
   isActive: true,
 } as const;
 
+const userListItemSelect = {
+  ...safeUserSelect,
+  isActive: true,
+  createdAt: true,
+} as const;
+
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
@@ -64,7 +70,7 @@ export class UsersService {
         orderBy: { createdAt: 'desc' },
         skip,
         take: normalizedLimit,
-        select: safeUserSelect,
+        select: userListItemSelect,
       }),
       this.prisma.user.count(),
     ]);

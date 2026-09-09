@@ -187,13 +187,16 @@ export class ManagerReportsService {
 }
 
 function createManagerReportWhere(query: ReportQueryDto): Prisma.ReportWhereInput {
+  const weekInput = query.weekStart ?? query.week;
   const where: Prisma.ReportWhereInput = {
     status: query.status,
     userId: query.userId,
     projectId: query.projectId,
   };
 
-  if (query.from || query.to) {
+  if (weekInput) {
+    where.weekStart = parseBusinessDate(weekInput, 'weekStart');
+  } else if (query.from || query.to) {
     where.weekStart = {
       gte: query.from ? parseBusinessDate(query.from, 'from') : undefined,
       lte: query.to ? parseBusinessDate(query.to, 'to') : undefined,

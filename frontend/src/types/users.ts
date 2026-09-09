@@ -5,7 +5,8 @@ export type User = {
   name: string;
   email: string;
   role: UserRole;
-  isActive?: boolean;
+  isActive: boolean;
+  createdAt: string;
 };
 
 export type PaginatedUsers = {

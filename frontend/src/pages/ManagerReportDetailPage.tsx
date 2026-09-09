@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, History, MessageSquareText } from 'lucide-react';
+import { CheckCircle2, History, MessageSquareText, Printer } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useParams } from 'react-router-dom';
@@ -30,7 +30,9 @@ import {
   ReviewFeedback,
   formatDateTime,
 } from '../features/reports/components/ReportDisplay';
+import { ReportActivityTimeline } from '../features/reports/components/ReportActivityTimeline';
 import { reportsKeys } from '../features/reports/query-keys';
+import { printPage } from '../lib/print';
 
 export function ManagerReportDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -126,7 +128,7 @@ export function ManagerReportDetailPage() {
         </CardContent>
       </Card>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="print-hidden flex flex-wrap gap-2">
         {canReview ? (
           <>
             <Button
@@ -148,6 +150,10 @@ export function ManagerReportDetailPage() {
             </Button>
           </>
         ) : null}
+        <Button type="button" variant="outline" onClick={printPage}>
+          <Printer className="h-4 w-4" aria-hidden="true" />
+          Print / Save as PDF
+        </Button>
       </div>
 
       {successMessage ? (
@@ -159,6 +165,7 @@ export function ManagerReportDetailPage() {
 
       <VersionSummaries reportId={report.id} versions={report.versionSummaries ?? []} />
       <ReviewFeedback reviews={report.reviews} />
+      <ReportActivityTimeline report={report} />
       <ReportContent report={report} />
 
       <Dialog

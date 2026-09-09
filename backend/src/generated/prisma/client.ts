@@ -91,3 +91,8 @@ export type TimeEntry = Prisma.TimeEntryModel
  * 
  */
 export type Review = Prisma.ReviewModel
+/**
+ * Model ProjectMember
+ * 
+ */
+export type ProjectMember = Prisma.ProjectMemberModel

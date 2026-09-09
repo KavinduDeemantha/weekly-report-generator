@@ -6,6 +6,8 @@ export type ManagerReportFilters = {
   status?: ReportStatus;
   userId?: string;
   projectId?: string;
+  weekStart?: string;
+  week?: string;
   from?: string;
   to?: string;
 };

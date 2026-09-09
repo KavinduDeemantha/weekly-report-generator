@@ -23,3 +23,43 @@
     @apply transition-colors focus-visible:border-primary;
   }
 }
+
+@media print {
+  @page {
+    margin: 16mm;
+  }
+
+  body {
+    background: white;
+    color: #0f172a;
+  }
+
+  .print-hidden,
+  aside,
+  header,
+  button {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  section,
+  article,
+  table,
+  tr,
+  .break-inside-avoid {
+    break-inside: avoid;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th,
+  td {
+    border-bottom: 1px solid #cbd5e1;
+  }
+}

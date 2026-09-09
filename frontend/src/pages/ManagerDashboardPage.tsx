@@ -97,7 +97,11 @@ export function ManagerDashboardPage() {
       {summary.isError ? (
         <ErrorState message={getErrorMessage(summary.error)} />
       ) : null}
-      <SummaryCards data={summary.data} isLoading={summary.isLoading} />
+      <SummaryCards
+        data={summary.data}
+        filters={filters}
+        isLoading={summary.isLoading}
+      />
 
       <div className="grid gap-6 xl:grid-cols-2">
         <DashboardSection
@@ -130,7 +134,10 @@ export function ManagerDashboardPage() {
           isLoading={projectDistribution.isLoading}
           title="Tasks by Project"
         >
-          <ProjectDistributionChart data={projectDistribution.data ?? []} />
+          <ProjectDistributionChart
+            data={projectDistribution.data ?? []}
+            filters={filters}
+          />
         </DashboardSection>
 
         <DashboardSection

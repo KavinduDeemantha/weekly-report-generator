@@ -224,6 +224,12 @@ describe('Authentication and RBAC (e2e)', () => {
       .set('Cookie', cookie)
       .expect(200);
 
+    expect(response.body.data[0]).toEqual(
+      expect.objectContaining({
+        isActive: expect.any(Boolean),
+        createdAt: expect.any(String),
+      }),
+    );
     expect(response.body.data[0].passwordHash).toBeUndefined();
     expect(response.body.meta).toEqual(
       expect.objectContaining({

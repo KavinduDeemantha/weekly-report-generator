@@ -5,6 +5,7 @@ export type ProjectResponse = {
   name: string;
   description: string | null;
   isActive: boolean;
+  assignedMemberCount?: number;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -12,4 +13,11 @@ export type ProjectResponse = {
 export type PaginatedProjects = {
   data: ProjectResponse[];
   meta: PaginationMeta;
+};
+
+export type ProjectMemberResponse = {
+  id: string;
+  name: string;
+  email: string;
+  assignedAt: Date;
 };

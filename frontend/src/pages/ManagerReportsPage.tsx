@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Search } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { EmptyState, ErrorState, PageLoading } from '../components/common/PageState';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -21,10 +22,10 @@ import { usersApi } from '../features/users/api';
 import { userKeys } from '../features/users/query-keys';
 
 export function ManagerReportsPage() {
-  const [filters, setFilters] = useState<ManagerReportFilters>({
-    page: 1,
-    limit: 10,
-  });
+  const [searchParams] = useSearchParams();
+  const [filters, setFilters] = useState<ManagerReportFilters>(() =>
+    createInitialFilters(searchParams),
+  );
 
   const reportsQuery = useQuery({
     queryKey: managerReportKeys.list(filters),
@@ -52,7 +53,7 @@ export function ManagerReportsPage() {
         </p>
       </div>
 
-      <div className="grid gap-3 rounded-xl border border-border bg-card p-4 shadow-soft lg:grid-cols-5">
+      <div className="grid gap-3 rounded-xl border border-border bg-card p-4 shadow-soft lg:grid-cols-6">
         <select
           aria-label="Filter by status"
           className="h-10 rounded-md border border-input bg-card px-3 text-sm shadow-sm transition-colors focus-visible:border-primary"
@@ -107,11 +108,27 @@ export function ManagerReportsPage() {
           ))}
         </select>
         <Input
+          aria-label="Selected week"
+          type="date"
+          value={filters.weekStart ?? ''}
+          onChange={(event) =>
+            updateFilters({
+              weekStart: event.target.value || undefined,
+              from: undefined,
+              to: undefined,
+            })
+          }
+        />
+        <Input
           aria-label="From date"
           type="date"
           value={filters.from ?? ''}
           onChange={(event) =>
-            updateFilters({ from: event.target.value || undefined })
+            updateFilters({
+              from: event.target.value || undefined,
+              weekStart: undefined,
+              week: undefined,
+            })
           }
         />
         <Input
@@ -119,7 +136,11 @@ export function ManagerReportsPage() {
           type="date"
           value={filters.to ?? ''}
           onChange={(event) =>
-            updateFilters({ to: event.target.value || undefined })
+            updateFilters({
+              to: event.target.value || undefined,
+              weekStart: undefined,
+              week: undefined,
+            })
           }
         />
       </div>
@@ -225,4 +246,25 @@ export function ManagerReportsPage() {
       ) : null}
     </section>
   );
+}
+
+function createInitialFilters(searchParams: URLSearchParams): ManagerReportFilters {
+  const status = searchParams.get('status');
+
+  return {
+    page: Number(searchParams.get('page') ?? 1),
+    limit: Number(searchParams.get('limit') ?? 10),
+    status: isReportStatus(status) ? status : undefined,
+    userId: searchParams.get('userId') ?? undefined,
+    projectId: searchParams.get('projectId') ?? undefined,
+    weekStart: searchParams.get('weekStart') ?? searchParams.get('week') ?? undefined,
+    from: searchParams.get('from') ?? undefined,
+    to: searchParams.get('to') ?? undefined,
+  };
+}
+
+function isReportStatus(
+  value: string | null,
+): value is NonNullable<ManagerReportFilters['status']> {
+  return value !== null && reportStatuses.includes(value as NonNullable<ManagerReportFilters['status']>);
 }

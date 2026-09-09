@@ -12,8 +12,13 @@ export type UserWithPassword = SafeUser & {
   isActive: boolean;
 };
 
+export type UserListItem = SafeUser & {
+  isActive: boolean;
+  createdAt: Date;
+};
+
 export type PaginatedUsers = {
-  data: SafeUser[];
+  data: UserListItem[];
   meta: {
     page: number;
     limit: number;

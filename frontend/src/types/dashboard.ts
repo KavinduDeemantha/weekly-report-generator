@@ -55,7 +55,12 @@ export type DashboardActivityType =
 export type DashboardActivityItem = {
   type: DashboardActivityType;
   reportId: string;
+  versionNumber?: number;
   user: {
+    id: string;
+    name: string;
+  };
+  reviewer?: {
     id: string;
     name: string;
   };

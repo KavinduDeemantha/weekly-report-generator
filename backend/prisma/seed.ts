@@ -109,6 +109,32 @@ async function main() {
     },
   });
 
+  await prisma.projectMember.deleteMany({
+    where: {
+      OR: [
+        { userId: { in: members.map((member) => member.id) } },
+        {
+          projectId: {
+            in: [clientPortal.id, internalTooling.id, research.id],
+          },
+        },
+      ],
+    },
+  });
+
+  await prisma.projectMember.createMany({
+    data: [
+      { userId: members[0].id, projectId: clientPortal.id },
+      { userId: members[0].id, projectId: internalTooling.id },
+      { userId: members[0].id, projectId: research.id },
+      { userId: members[1].id, projectId: internalTooling.id },
+      { userId: members[2].id, projectId: research.id },
+      { userId: members[3].id, projectId: clientPortal.id },
+      { userId: members[4].id, projectId: clientPortal.id },
+      { userId: members[4].id, projectId: research.id },
+    ],
+  });
+
   await prisma.report.deleteMany({
     where: {
       userId: {

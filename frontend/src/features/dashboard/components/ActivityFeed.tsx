@@ -39,9 +39,13 @@ export function ActivityFeed({ data }: { data: DashboardActivityItem[] }) {
                   {formatDateTime(item.createdAt)}
                 </span>
               </div>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">{item.message}</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                {item.message}
+              </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {item.user.name} · {item.project.name}
+                {item.user.name} - {item.project.name}
+                {item.versionNumber ? ` - Version ${item.versionNumber}` : ''}
+                {item.reviewer ? ` - Reviewer: ${item.reviewer.name}` : ''}
               </p>
             </div>
             <Link

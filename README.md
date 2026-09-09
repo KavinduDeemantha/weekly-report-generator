@@ -9,8 +9,10 @@ Full-stack technical assignment for weekly team reporting, manager review, and r
 - Team-member weekly report creation, editing, submission, correction, resubmission, and version history
 - Manager report review with request-changes and approval actions
 - Project management with soft deactivation
+- Project-member assignments managed by managers
 - Read-only manager user list
-- Manager dashboard analytics with filters, charts, summary metrics, and activity feed
+- Manager dashboard analytics with filters, charts, drill-downs, summary metrics, and activity feed
+- Print / Save as PDF support for report detail and version pages
 - Optional Gemini-powered report assistant for member report drafting
 
 ## Tech Stack
@@ -161,7 +163,7 @@ The optional AI assistant is available inside the create/edit report form. It ca
 
 ## Frontend Manager Operations
 
-The manager reports page consumes `GET /manager/reports` with pagination plus status, team-member, project, and date-range filters. List rows show summary data only; full report content is loaded on the review page.
+The manager reports page consumes `GET /manager/reports` with pagination plus status, team-member, project, selected-week, and date-range filters. Dashboard drill-down links preserve the selected dashboard scope where the target report list is meaningful. List rows show summary data only; full report content is loaded on the review page.
 
 The manager report review page consumes `GET /manager/reports/:id` and reuses the shared report display components used by the member UI. Review actions are shown only when a report is `SUBMITTED`:
 
@@ -170,7 +172,7 @@ The manager report review page consumes `GET /manager/reports/:id` and reuses th
 
 After review actions, the frontend invalidates manager report detail/list queries and dashboard queries so stale review state is refreshed from the backend. Managers can inspect immutable version snapshots through the manager version detail route.
 
-Project management consumes the existing `/projects` API. Managers can create, edit, and soft-deactivate projects; duplicate-name and validation errors are displayed through the shared API error handling. User management is read-only because the backend currently exposes only `GET /users`.
+Project management consumes the `/projects` API. Managers can create, edit, soft-deactivate projects, and manage assigned team members. Duplicate-name and validation errors are displayed through the shared API error handling. User management is read-only because the backend currently exposes only `GET /users`.
 
 ## Frontend Manager Dashboard
 
@@ -196,7 +198,13 @@ Dashboard widgets:
 
 Dashboard values are backend-defined. The frontend does not recompute compliance or content analytics differently, and dashboard content metrics rely on the backend rule that only current report versions are counted.
 
+Drill-down behavior is intentionally limited to accurate targets. Needs-correction summary cards can open the manager reports list filtered to the same reporting scope. Project distribution links open manager reports filtered by that project and the active date/member filters. Pending members without reports do not get fake report links.
+
 Route-level lazy loading is enabled for major frontend pages, including the manager dashboard and report pages.
+
+## Export / Print
+
+Report detail and historical version pages include a `Print / Save as PDF` action that uses the browser print flow. Print styles hide navigation, filters, buttons, AI controls, and manager actions while preserving the report title, member/project/week metadata, status, version, report content, time breakdown, notes, reviews, and historical-version labels where relevant.
 
 ## Testing
 
@@ -244,19 +252,21 @@ This is destructive and should only be used against a local/demo database. Never
 
 ## Future Improvements
 
-- Manager dashboard drilldowns and exports
 - Admin-managed invitations and role changes
 - Route-level prefetching for frequently used pages
+- Email or in-app notifications for review events
 
 ## Projects
 
-Project routes require authentication. Team members can list active projects only. Managers can list all projects and manage them.
+Project routes require authentication. Team members can list active projects assigned to them. Managers can list all projects, manage project records, and manage team-member assignments.
 
 - `GET /projects?page=1&limit=20`
 - `GET /projects?isActive=false` for managers
 - `POST /projects` requires `MANAGER`
 - `PATCH /projects/:id` requires `MANAGER`
 - `DELETE /projects/:id` requires `MANAGER` and soft-deactivates the project
+- `GET /projects/:id/members` requires `MANAGER`
+- `PUT /projects/:id/members` requires `MANAGER` and replaces the assigned team-member set
 
 Example:
 
@@ -266,6 +276,16 @@ Example:
   "description": "Customer-facing web portal"
 }
 ```
+
+Project member assignment body:
+
+```json
+{
+  "userIds": ["00000000-0000-0000-0000-000000000000"]
+}
+```
+
+Only active `TEAM_MEMBER` users can be assigned as project members. Team members can create or move reports only for active projects assigned to them; existing reports remain readable through the normal ownership and manager-review rules.
 
 ## Reports
 
@@ -308,6 +328,8 @@ Request changes body:
 ```
 
 `Report` stores ownership, project, week range, status, and the current version number. `ReportVersion` stores the versioned weekly content: notes, tasks, next-week tasks, blockers, achievements, time entries, and reviews tied to that exact version.
+
+Report detail pages show an activity timeline derived from existing domain records: report creation time, version creation/submission timestamps, and review rows. No separate audit-log table is required for the current workflow.
 
 ## AI Report Assistant API
 
@@ -357,6 +379,8 @@ Common filters:
 Summary metrics use selected-week semantics. Expected members are active `TEAM_MEMBER` users, optionally narrowed by `userId`. A compliant submission is a report for that week with status `SUBMITTED`, `NEEDS_CORRECTION`, or `APPROVED`. `DRAFT` and missing reports count as pending. `NEEDS_CORRECTION` still counts as submitted because the member did submit the report. Compliance rate is `compliant active members / total active members * 100`, with `0` returned when there are no matching active members.
 
 Dashboard content analytics use only each report's current `ReportVersion`. Historical versions are kept for audit/history and are not double-counted in task trends, project distribution, time distribution, or open blocker counts. Activity is derived from `ReportVersion.submittedAt` and `Review` rows, returning recent submitted, resubmitted, request-changes, and approval events.
+
+Dashboard drill-down links target manager report lists only when the result maps cleanly to real reports. For example, a needs-correction card opens `/manager/reports` with `status=NEEDS_CORRECTION` plus the current dashboard date/project/member filters, while `NOT_STARTED` members have no report link.
 
 Example create report request:
 

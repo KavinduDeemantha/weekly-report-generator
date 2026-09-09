@@ -14,6 +14,7 @@ describe('Manager Dashboard Analytics (e2e)', () => {
   let marker: string;
   let managerCookie: string;
   let memberCookie: string;
+  let managerId: string;
   let submittedUserId: string;
   let needsCorrectionUserId: string;
   let approvedUserId: string;
@@ -42,6 +43,7 @@ describe('Manager Dashboard Analytics (e2e)', () => {
     marker = `dashboard-e2e-${Date.now()}`;
 
     const manager = await createUser('Dashboard Manager', managerEmail(), Role.MANAGER);
+    managerId = manager.id;
     const submittedUser = await createUser(
       'Dashboard Submitted',
       submittedEmail(),
@@ -259,6 +261,22 @@ describe('Manager Dashboard Analytics (e2e)', () => {
       .expect(200);
   });
 
+  it('manager reports supports exact weekStart filters for dashboard drill-downs', async () => {
+    const response = await request(app.getHttpServer())
+      .get(`/manager/reports?weekStart=${weekStart}&projectId=${projectId}&limit=100`)
+      .set('Cookie', managerCookie)
+      .expect(200);
+
+    expect(response.body.data).toHaveLength(4);
+    expect(
+      response.body.data.every(
+        (report: { weekStart: string; project: { id: string } }) =>
+          report.weekStart === '2028-02-07T00:00:00.000Z' &&
+          report.project.id === projectId,
+      ),
+    ).toBe(true);
+  });
+
   it('summary metrics count compliance, pending states, and current open blockers correctly', async () => {
     const submittedSummary = await getSummary(submittedUserId);
     const needsCorrectionSummary = await getSummary(needsCorrectionUserId);
@@ -431,6 +449,18 @@ describe('Manager Dashboard Analytics (e2e)', () => {
     expect(types).toContain('REPORT_RESUBMITTED');
     expect(types).toContain('CHANGES_REQUESTED');
     expect(types).toContain('REPORT_APPROVED');
+    expect(
+      response.body.some(
+        (item: {
+          type: string;
+          versionNumber?: number;
+          reviewer?: { id: string };
+        }) =>
+          item.type === 'CHANGES_REQUESTED' &&
+          item.versionNumber === 1 &&
+          item.reviewer?.id === managerId,
+      ),
+    ).toBe(true);
     expect(
       response.body.every(
         (item: { project: { id: string } }) => item.project.id === projectId,

@@ -6,6 +6,7 @@ import { Button } from '../components/ui/button';
 import { getErrorMessage } from '../api/errors';
 import { usersApi } from '../features/users/api';
 import { userKeys } from '../features/users/query-keys';
+import { formatDateTime } from '../features/reports/components/ReportDisplay';
 
 export function ManagerUsersPage() {
   const [page, setPage] = useState(1);
@@ -49,6 +50,7 @@ export function ManagerUsersPage() {
                 <th className="px-4 py-3 font-medium">Email</th>
                 <th className="px-4 py-3 font-medium">Role</th>
                 <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Created</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -60,11 +62,18 @@ export function ManagerUsersPage() {
                     <Badge>{user.role.replace('_', ' ')}</Badge>
                   </td>
                   <td className="px-4 py-3">
-                    {user.isActive === undefined ? (
-                      <span className="text-muted-foreground">Not exposed</span>
-                    ) : (
-                      <Badge>{user.isActive ? 'Active' : 'Inactive'}</Badge>
-                    )}
+                    <Badge
+                      className={
+                        user.isActive
+                          ? 'border-success/30 bg-success/10 text-success'
+                          : 'border-muted-foreground/30 bg-muted text-muted-foreground'
+                      }
+                    >
+                      {user.isActive ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {formatDateTime(user.createdAt)}
                   </td>
                 </tr>
               ))}

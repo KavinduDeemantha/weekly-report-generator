@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
+import { Printer } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { getErrorMessage } from '../api/errors';
 import { ErrorState, PageLoading } from '../components/common/PageState';
+import { Button } from '../components/ui/button';
 import { reportsApi } from '../features/reports/api';
 import {
   ReportContent,
@@ -9,6 +11,7 @@ import {
   formatDateTime,
 } from '../features/reports/components/ReportDisplay';
 import { reportsKeys } from '../features/reports/query-keys';
+import { printPage } from '../lib/print';
 
 export function ManagerReportVersionDetailPage() {
   const { id, versionNumber } = useParams<{
@@ -53,11 +56,20 @@ export function ManagerReportVersionDetailPage() {
             : ' · Not submitted yet'}
         </p>
         <Link
-          className="mt-3 inline-block text-sm font-medium text-primary hover:underline"
+          className="print-hidden mt-3 inline-block text-sm font-medium text-primary hover:underline"
           to={`/manager/reports/${id}`}
         >
           Back to review
         </Link>
+        <Button
+          className="print-hidden mt-3 sm:ml-3"
+          type="button"
+          variant="outline"
+          onClick={printPage}
+        >
+          <Printer className="h-4 w-4" aria-hidden="true" />
+          Print / Save as PDF
+        </Button>
       </div>
 
       <ReviewFeedback reviews={version.reviews} />

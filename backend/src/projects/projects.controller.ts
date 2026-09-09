@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
@@ -16,6 +17,7 @@ import { Role } from '../generated/prisma/enums.js';
 import { CreateProjectDto } from './dto/create-project.dto.js';
 import { ProjectQueryDto } from './dto/project-query.dto.js';
 import { UpdateProjectDto } from './dto/update-project.dto.js';
+import { UpdateProjectMembersDto } from './dto/update-project-members.dto.js';
 import { PaginatedProjects, ProjectResponse } from './projects.types.js';
 import { ProjectsService } from './projects.service.js';
 
@@ -28,7 +30,24 @@ export class ProjectsController {
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: ProjectQueryDto,
   ): Promise<PaginatedProjects> {
-    return this.projectsService.listProjects(user.role, query);
+    return this.projectsService.listProjects(user, query);
+  }
+
+  @Roles(Role.MANAGER)
+  @Get(':id/members')
+  listProjectMembers(
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.projectsService.listProjectMembers(id);
+  }
+
+  @Roles(Role.MANAGER)
+  @Put(':id/members')
+  updateProjectMembers(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateProjectMembersDto,
+  ) {
+    return this.projectsService.updateProjectMembers(id, dto.userIds);
   }
 
   @Roles(Role.MANAGER)

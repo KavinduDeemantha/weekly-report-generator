@@ -321,6 +321,17 @@ export class DashboardService {
         select: {
           action: true,
           createdAt: true,
+          reportVersion: {
+            select: {
+              versionNumber: true,
+            },
+          },
+          reviewer: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
           report: {
             select: {
               id: true,
@@ -349,6 +360,7 @@ export class DashboardService {
       return {
         type,
         reportId: version.report.id,
+        versionNumber: version.versionNumber,
         user: version.report.user,
         project: version.report.project,
         createdAt: version.submittedAt ?? new Date(0),
@@ -368,7 +380,9 @@ export class DashboardService {
       return {
         type,
         reportId: review.report.id,
+        versionNumber: review.reportVersion.versionNumber,
         user: review.report.user,
+        reviewer: review.reviewer,
         project: review.report.project,
         createdAt: review.createdAt,
         message:

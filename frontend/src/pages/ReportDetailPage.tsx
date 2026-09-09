@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { History, Pencil, Send } from 'lucide-react';
+import { History, Pencil, Printer, Send } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { useState } from 'react';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
@@ -12,7 +12,9 @@ import {
   ReportHeader,
   ReviewFeedback,
 } from '../features/reports/components/ReportDisplay';
+import { ReportActivityTimeline } from '../features/reports/components/ReportActivityTimeline';
 import { reportsKeys } from '../features/reports/query-keys';
+import { printPage } from '../lib/print';
 import {
   canEditReportStatus,
   canResubmitReportStatus,
@@ -92,7 +94,7 @@ export function ReportDetailPage() {
     <section className="space-y-6">
       <ReportHeader report={report} />
 
-      <div className="flex flex-wrap gap-2">
+      <div className="print-hidden flex flex-wrap gap-2">
         {canEdit ? (
           <Link
             className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-muted"
@@ -129,6 +131,10 @@ export function ReportDetailPage() {
           <History className="h-4 w-4" aria-hidden="true" />
           Versions
         </Link>
+        <Button type="button" variant="outline" onClick={printPage}>
+          <Printer className="h-4 w-4" aria-hidden="true" />
+          Print / Save as PDF
+        </Button>
       </div>
 
       {actionError ? <ErrorState message={actionError} /> : null}
@@ -137,6 +143,7 @@ export function ReportDetailPage() {
         latestCorrectionFeedback={report.latestCorrectionFeedback}
         reviews={report.reviews}
       />
+      <ReportActivityTimeline report={report} />
       <ReportContent report={report} />
 
       <ConfirmDialog

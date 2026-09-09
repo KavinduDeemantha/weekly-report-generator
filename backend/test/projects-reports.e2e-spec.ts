@@ -74,6 +74,13 @@ describe('Projects and Reports (e2e)', () => {
       })
     ).id;
 
+    await prisma.projectMember.createMany({
+      data: [
+        { projectId: activeProjectId, userId: memberId },
+        { projectId: activeProjectId, userId: secondMemberId },
+      ],
+    });
+
     managerCookie = await loginAndGetCookie(managerEmail());
     memberCookie = await loginAndGetCookie(memberEmail());
     secondMemberCookie = await loginAndGetCookie(secondMemberEmail());
@@ -131,6 +138,52 @@ describe('Projects and Reports (e2e)', () => {
       .delete(`/projects/${activeProjectId}`)
       .set('Cookie', memberCookie)
       .expect(403);
+  });
+
+  it('TEAM_MEMBER cannot mutate project assignments', async () => {
+    await request(app.getHttpServer())
+      .put(`/projects/${activeProjectId}/members`)
+      .set('Cookie', memberCookie)
+      .send({ userIds: [memberId] })
+      .expect(403);
+  });
+
+  it('MANAGER can assign and unassign project members', async () => {
+    const project = await prisma.project.create({
+      data: { name: `${marker} Assignment Project` },
+    });
+
+    const assigned = await request(app.getHttpServer())
+      .put(`/projects/${project.id}/members`)
+      .set('Cookie', managerCookie)
+      .send({ userIds: [memberId, memberId, secondMemberId] })
+      .expect(200);
+
+    expect(assigned.body.map((member: { id: string }) => member.id).sort()).toEqual(
+      [memberId, secondMemberId].sort(),
+    );
+
+    const unassigned = await request(app.getHttpServer())
+      .put(`/projects/${project.id}/members`)
+      .set('Cookie', managerCookie)
+      .send({ userIds: [secondMemberId] })
+      .expect(200);
+
+    expect(unassigned.body).toHaveLength(1);
+    expect(unassigned.body[0].id).toBe(secondMemberId);
+  });
+
+  it('MANAGER cannot assign manager accounts as project members', async () => {
+    const manager = await prisma.user.findUniqueOrThrow({
+      where: { email: managerEmail() },
+      select: { id: true },
+    });
+
+    await request(app.getHttpServer())
+      .put(`/projects/${activeProjectId}/members`)
+      .set('Cookie', managerCookie)
+      .send({ userIds: [manager.id] })
+      .expect(400);
   });
 
   it('MANAGER can create a project', async () => {
@@ -405,6 +458,21 @@ describe('Projects and Reports (e2e)', () => {
         projectId: '00000000-0000-0000-0000-000000000000',
       })
       .expect(404);
+  });
+
+  it('unassigned project cannot be used for a new report', async () => {
+    const unassignedProject = await prisma.project.create({
+      data: { name: `${marker} Unassigned Project` },
+    });
+
+    await request(app.getHttpServer())
+      .post('/reports')
+      .set('Cookie', memberCookie)
+      .send({
+        ...reportPayload('2026-11-23', '2026-11-29'),
+        projectId: unassignedProject.id,
+      })
+      .expect(403);
   });
 
   async function createUser(input: {
